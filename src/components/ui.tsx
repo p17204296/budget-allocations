@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export type IconName =
   | "overview"
@@ -68,4 +68,55 @@ export function EmptyState({ title, description }: { title: string; description:
 
 export function SectionTitle({ title, subtitle, accent = "ink", value }: { title: string; subtitle?: string; accent?: "ink" | "amber" | "mint" | "coral"; value?: string }) {
   return <div className="section-title"><div className="section-title-copy"><span className={`section-dot dot-${accent}`} /><div><h2>{title}</h2>{subtitle ? <p>{subtitle}</p> : null}</div></div>{value ? <strong>{value}</strong> : null}</div>;
+}
+
+export function ConfirmDialog({ open, title, description, confirmLabel = "Delete", onConfirm, onCancel }: {
+  open: boolean;
+  title: string;
+  description: string;
+  confirmLabel?: string;
+  onConfirm: () => Promise<void>;
+  onCancel: () => void;
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (open && dialog && !dialog.open) {
+      setError("");
+      dialog.showModal();
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  const confirm = async () => {
+    setIsPending(true);
+    setError("");
+    try {
+      await onConfirm();
+    } catch {
+      setError("That item could not be deleted. Please try again.");
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  return (
+    <dialog ref={dialogRef} className="confirm-dialog" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-description" onCancel={(event) => { event.preventDefault(); if (!isPending) onCancel(); }} onClick={(event) => { if (event.target === event.currentTarget && !isPending) onCancel(); }}>
+      <div className="confirm-dialog-panel">
+        <span className="confirm-dialog-icon"><Icon name="trash" /></span>
+        <p className="eyebrow">Please confirm</p>
+        <h2 id="confirm-dialog-title">{title}</h2>
+        <p id="confirm-dialog-description">{description}</p>
+        {error ? <p className="confirm-dialog-error" role="alert">{error}</p> : null}
+        <div className="confirm-dialog-actions">
+          <button type="button" className="btn-secondary" onClick={onCancel} disabled={isPending} autoFocus>Cancel</button>
+          <button type="button" className="btn-danger" onClick={() => void confirm()} disabled={isPending}>{isPending ? "Deleting…" : confirmLabel}</button>
+        </div>
+      </div>
+    </dialog>
+  );
 }

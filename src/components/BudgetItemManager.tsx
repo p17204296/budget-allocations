@@ -3,7 +3,7 @@ import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { getCurrencySymbol } from "../lib/currency";
-import { EmptyState, Icon, IconButton } from "./ui";
+import { ConfirmDialog, EmptyState, Icon, IconButton } from "./ui";
 
 interface BudgetItem { _id: Id<"budgetItems">; name: string; category: "essentials" | "savings"; amount: number; accountId?: Id<"accounts">; }
 interface Account { _id: Id<"accounts">; name: string; type: "current" | "savings"; }
@@ -16,6 +16,7 @@ export function BudgetItemManager({ category, items, accounts, currency }: Props
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<Id<"budgetItems"> | null>(null);
   const [formData, setFormData] = useState(emptyForm);
+  const [deleteTarget, setDeleteTarget] = useState<BudgetItem | null>(null);
   const upsertBudgetItem = useMutation(api.budget.upsertBudgetItem);
   const deleteBudgetItem = useMutation(api.budget.deleteBudgetItem);
   const symbol = getCurrencySymbol(currency);
@@ -43,7 +44,7 @@ export function BudgetItemManager({ category, items, accounts, currency }: Props
           <div className={`money-item-block ${isEditing ? "editing" : ""}`} key={item._id}>
             <article className="money-row">
               <div className="money-row-main"><span className={`item-mark ${category}`} /> <div><h3>{item.name}</h3><p>{account?.name ?? "No account assigned"}</p></div></div>
-              <div className="money-row-end"><strong>{symbol}{item.amount.toLocaleString()}</strong><div className="row-actions"><IconButton label={`Edit ${item.name}`} icon="edit" onClick={() => handleEdit(item)} /><IconButton label={`Delete ${item.name}`} icon="trash" tone="danger" onClick={() => void deleteBudgetItem({ id: item._id })} /></div></div>
+              <div className="money-row-end"><strong>{symbol}{item.amount.toLocaleString()}</strong><div className="row-actions"><IconButton label={`Edit ${item.name}`} icon="edit" onClick={() => handleEdit(item)} /><IconButton label={`Delete ${item.name}`} icon="trash" tone="danger" onClick={() => setDeleteTarget(item)} /></div></div>
             </article>
             {isEditing ? <BudgetItemForm category={category} accounts={accounts} symbol={symbol} formData={formData} isEditing onChange={(field, value) => setFormData((current) => ({ ...current, [field]: value }))} onSubmit={handleSubmit} onCancel={resetForm} /> : null}
           </div>
@@ -54,6 +55,7 @@ export function BudgetItemManager({ category, items, accounts, currency }: Props
       {!isAdding && editingId === null ? (
         <button type="button" onClick={() => setIsAdding(true)} className="add-row"><span><Icon name="plus" /></span>Add {category === "essentials" ? "expense" : "savings goal"}</button>
       ) : null}
+      <ConfirmDialog open={deleteTarget !== null} title={`Delete ${deleteTarget?.name ?? "this item"}?`} description="This will permanently remove it from your monthly budget. This action cannot be undone." onCancel={() => setDeleteTarget(null)} onConfirm={async () => { if (!deleteTarget) return; await deleteBudgetItem({ id: deleteTarget._id }); if (editingId === deleteTarget._id) resetForm(); setDeleteTarget(null); }} />
     </div>
   );
 }
