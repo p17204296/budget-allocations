@@ -245,6 +245,7 @@ label small { color: var(--ink-soft); font-weight: 500; }
 .auth-divider { display: flex; align-items: center; gap: 10px; margin: 16px 0 10px; color: #8b8a83; font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
 .auth-divider::before, .auth-divider::after { content: ""; height: 1px; flex: 1; background: var(--line-soft); }
 .auth-divider span { white-space: nowrap; }
+.auth-guest-note { margin: 10px 2px 0; color: var(--ink-soft); font-size: 11px; line-height: 1.5; text-align: center; }
 
 .confirm-dialog { width: min(440px, calc(100vw - 24px)); max-width: none; padding: 0; color: var(--ink); border: 0; background: transparent; inset: 0; margin: auto; }
 .confirm-dialog::backdrop { background: rgba(15,35,29,.58); backdrop-filter: blur(4px); animation: dialog-fade .18s ease-out both; }

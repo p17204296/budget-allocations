@@ -119,6 +119,9 @@ export function SignInForm() {
       <button className="auth-button auth-button-secondary" onClick={() => void signIn("anonymous")}>
         Try the app as a guest
       </button>
+      <p className="auth-guest-note">
+        Guest sessions are temporary. Guest accounts and their data are deleted after 7 days — create an account to keep your budget.
+      </p>
     </div>
   );
 }
