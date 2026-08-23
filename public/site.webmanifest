@@ -1,0 +1,17 @@
+{
+  "name": "Budget Allocations",
+  "short_name": "Budget Allocations",
+  "description": "A free personal budgeting app for organising accounts and tracking allocations.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#1e3a5f",
+  "icons": [
+    {
+      "src": "/budget-allocations-logo.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -9,7 +9,14 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-neutral-50">
       <header className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm h-16 flex justify-between items-center border-b border-slate-200 shadow-sm px-6">
-        <h2 className="text-xl font-semibold text-slate-800">Budget Allocations</h2>
+        <div className="flex items-center gap-2.5">
+          <img
+            src="/budget-allocations-logo.png"
+            alt=""
+            className="h-8 w-8 object-contain"
+          />
+          <h2 className="text-xl font-semibold text-slate-800">Budget Allocations</h2>
+        </div>
         <Authenticated>
           <SignOutButton />
         </Authenticated>
