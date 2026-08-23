@@ -10,6 +10,7 @@
 
 import type * as auth from "../auth.js";
 import type * as budget from "../budget.js";
+import type * as feedback from "../feedback.js";
 import type * as http from "../http.js";
 import type * as router from "../router.js";
 import type * as settings from "../settings.js";
@@ -23,6 +24,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   budget: typeof budget;
+  feedback: typeof feedback;
   http: typeof http;
   router: typeof router;
   settings: typeof settings;

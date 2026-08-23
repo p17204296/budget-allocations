@@ -5,10 +5,12 @@ import { SignInForm } from "./SignInForm";
 import { SignOutButton } from "./SignOutButton";
 import { Toaster } from "sonner";
 import { BudgetPlanner, type TabId } from "./components/BudgetPlanner";
+import { FeedbackDialog } from "./components/FeedbackDialog";
 import { Icon } from "./components/ui";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   return (
     <div className="app-shell">
@@ -27,7 +29,11 @@ export default function App() {
           <div><p>Budget</p><strong>Allocations</strong></div>
         </button>
         <Authenticated>
-          <SignOutButton />
+          <div className="topbar-actions">
+            <button type="button" className="feedback-button" onClick={() => setIsFeedbackOpen(true)} aria-label="Give feedback" title="Give feedback"><Icon name="feedback" /><span>Feedback</span></button>
+            <SignOutButton />
+          </div>
+          <FeedbackDialog open={isFeedbackOpen} page={activeTab} onClose={() => setIsFeedbackOpen(false)} />
         </Authenticated>
       </header>
       <main className="app-main">
