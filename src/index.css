@@ -112,6 +112,9 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .summary-legend strong { font-size: 13px; }
 
 .manager-list { display: grid; gap: 9px; }
+.money-item-block { display: grid; gap: 7px; }
+.money-item-block.editing { padding: 5px; border: 1px solid rgba(237,106,77,.38); border-radius: 18px; background: rgba(251,226,217,.34); animation: reveal .22s ease-out both; }
+.money-item-block.editing .money-row { border-color: rgba(237,106,77,.25); background: var(--surface); }
 .money-row, .account-row { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border: 1px solid var(--line-soft); border-radius: 14px; background: #fbf8f1; }
 .money-row-main { display: flex; min-width: 0; align-items: center; gap: 10px; }
 .money-row h3, .account-row h3 { overflow: hidden; margin: 0; font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
@@ -129,6 +132,11 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .add-row svg { width: 14px; }
 
 .inline-form { display: grid; gap: 14px; padding: 15px; border: 1px solid var(--line); border-radius: 15px; background: #f7f3ea; }
+.contextual-editor { position: relative; border-color: rgba(237,106,77,.3); background: #fffaf5; box-shadow: 0 10px 24px rgba(35,53,45,.06); }
+.contextual-editor::before { content: ""; position: absolute; top: -7px; left: 27px; width: 12px; height: 12px; border-top: 1px solid rgba(237,106,77,.3); border-left: 1px solid rgba(237,106,77,.3); background: #fffaf5; transform: rotate(45deg); }
+.inline-form-heading { display: flex; align-items: baseline; gap: 8px; padding-bottom: 2px; }
+.inline-form-heading span { color: var(--coral); font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.inline-form-heading strong { overflow: hidden; font-family: Georgia, "Times New Roman", serif; font-size: 15px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .surface-body.inline-form { border: 0; border-radius: 0; }
 .form-grid { display: grid; gap: 12px; }
 label > span, .settings-form label > span { display: block; margin-bottom: 6px; color: var(--ink); font-size: 11px; font-weight: 800; letter-spacing: .03em; }
