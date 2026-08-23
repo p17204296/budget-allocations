@@ -40,9 +40,12 @@ const applicationTables = {
       v.literal("accounts"),
       v.literal("income"),
       v.literal("settings"),
+      v.literal("admin"),
     ),
+    status: v.optional(v.union(v.literal("new"), v.literal("reviewed"), v.literal("archived"))),
     createdAt: v.number(),
-  }).index("by_user", ["userId"]),
+  }).index("by_user", ["userId"])
+    .index("by_status", ["status"]),
 };
 
 export default defineSchema({

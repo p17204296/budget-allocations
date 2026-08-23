@@ -7,12 +7,13 @@ import { BudgetItemManager } from "./BudgetItemManager";
 import { IncomeManager } from "./IncomeManager";
 import { SettingsPage } from "./SettingsPage";
 import { SummaryDashboard } from "./SummaryDashboard";
+import { AdminPage } from "./AdminPage";
 import { Card, Icon, type IconName, SectionTitle } from "./ui";
 import { getCurrencySymbol } from "../lib/currency";
 
-export type TabId = "overview" | "allocations" | "accounts" | "income" | "settings";
+export type TabId = "overview" | "allocations" | "accounts" | "income" | "settings" | "admin";
 
-const tabs: { id: TabId; label: string; icon: IconName }[] = [
+const primaryTabs: { id: TabId; label: string; icon: IconName }[] = [
   { id: "overview", label: "Overview", icon: "overview" },
   { id: "allocations", label: "Plan", icon: "allocations" },
   { id: "accounts", label: "Accounts", icon: "accounts" },
@@ -30,6 +31,7 @@ export function BudgetPlanner({ activeTab, onTabChange }: BudgetPlannerProps) {
   const budgetItemsQuery = useQuery(api.budget.getBudgetItems);
   const incomeQuery = useQuery(api.budget.getIncome);
   const settings = useQuery(api.settings.getUserSettings);
+  const adminAccess = useQuery(api.admin.getAccess);
   const initializeDefaultData = useMutation(api.budget.initializeDefaultData);
   const accounts = accountsQuery ?? [];
   const budgetItems = budgetItemsQuery ?? [];
@@ -51,6 +53,12 @@ export function BudgetPlanner({ activeTab, onTabChange }: BudgetPlannerProps) {
   const totalOutgoings = totalEssentials + totalSavings;
   const netTotal = totalIncome - totalOutgoings;
   const symbol = getCurrencySymbol(currency);
+  const isAdmin = adminAccess?.isAdmin ?? false;
+  const tabs = isAdmin ? [...primaryTabs, { id: "admin" as const, label: "Admin", icon: "shield" as const }] : primaryTabs;
+
+  useEffect(() => {
+    if (adminAccess !== undefined && !adminAccess.isAdmin && activeTab === "admin") onTabChange("overview");
+  }, [activeTab, adminAccess, onTabChange]);
 
   if (isLoading) {
     return <div className="planner-skeleton"><div /><div /><div /></div>;
@@ -86,9 +94,10 @@ export function BudgetPlanner({ activeTab, onTabChange }: BudgetPlannerProps) {
         {activeTab === "accounts" ? <AccountManager accounts={accounts} currency={currency} /> : null}
         {activeTab === "income" ? <IncomeManager income={income} currency={currency} /> : null}
         {activeTab === "settings" ? <SettingsPage /> : null}
+        {activeTab === "admin" && adminAccess?.isAdmin ? <AdminPage passwordResetEnabled={adminAccess.passwordResetEnabled} /> : null}
       </div>
 
-      <nav className="mobile-nav" aria-label="Budget sections">
+      <nav className={`mobile-nav${isAdmin ? " has-admin" : ""}`} aria-label="Budget sections">
         {tabs.map((tab) => (
           <button key={tab.id} type="button" onClick={() => onTabChange(tab.id)} className={activeTab === tab.id ? "active" : ""} aria-current={activeTab === tab.id ? "page" : undefined}>
             <Icon name={tab.icon} /><span>{tab.label}</span>

@@ -12,6 +12,7 @@ export const submit = mutation({
       v.literal("accounts"),
       v.literal("income"),
       v.literal("settings"),
+      v.literal("admin"),
     ),
   },
   returns: v.id("feedback"),
@@ -32,6 +33,7 @@ export const submit = mutation({
       type: args.type,
       message,
       page: args.page,
+      status: "new",
       createdAt: Date.now(),
     });
   },

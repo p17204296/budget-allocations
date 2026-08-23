@@ -8,10 +8,13 @@
  * @module
  */
 
+import type * as ResendOTPPasswordReset from "../ResendOTPPasswordReset.js";
+import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
 import type * as budget from "../budget.js";
 import type * as feedback from "../feedback.js";
 import type * as http from "../http.js";
+import type * as lib_admin from "../lib/admin.js";
 import type * as router from "../router.js";
 import type * as settings from "../settings.js";
 
@@ -22,10 +25,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  ResendOTPPasswordReset: typeof ResendOTPPasswordReset;
+  admin: typeof admin;
   auth: typeof auth;
   budget: typeof budget;
   feedback: typeof feedback;
   http: typeof http;
+  "lib/admin": typeof lib_admin;
   router: typeof router;
   settings: typeof settings;
 }>;
