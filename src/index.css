@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-light: #ffffff;
+  --color-dark: #1e293b;
+  --color-primary: #475569;
+  --color-primary-hover: #334155;
+  --color-accent: #64748b;
+  --color-success: #059669;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+}
+
+.accent-text {
+  @apply text-slate-600;
+}
+
+body {
+  font-family:
+    "Inter Variable",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    "Noto Sans",
+    sans-serif,
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    "Segoe UI Symbol",
+    "Noto Color Emoji";
+  color: var(--color-dark);
+  background: #f8fafc;
+}
+
+/* Professional auth styling */
+.auth-input-field {
+  @apply w-full px-4 py-3 rounded-lg bg-white border border-slate-300 focus:border-slate-500 focus:ring-1 focus:ring-slate-500 outline-none transition-all shadow-sm hover:border-slate-400;
+}
+
+.auth-button {
+  @apply w-full px-4 py-3 rounded-lg bg-slate-700 text-white font-medium hover:bg-slate-800 transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+/* Professional scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Refined transitions */
+button, input, select {
+  transition: all 0.15s ease-out;
+}
+
+/* Professional focus styles */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #475569;
+  outline-offset: 2px;
+}
+
+/* Professional card styling */
+.card {
+  @apply bg-white rounded-xl shadow-sm border border-slate-200;
+}
+
+.card-header {
+  @apply border-b border-slate-100 px-6 py-4;
+}
+
+.card-content {
+  @apply p-6;
+}
+
+/* Professional button variants */
+.btn-primary {
+  @apply px-4 py-2 bg-slate-700 text-white font-medium rounded-lg hover:bg-slate-800 transition-all shadow-sm hover:shadow;
+}
+
+.btn-secondary {
+  @apply px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-all;
+}
+
+.btn-outline {
+  @apply px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-all;
+}
+
+.btn-danger {
+  @apply px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-all shadow-sm;
+}
+
+/* Professional form styling */
+.form-input {
+  @apply w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-slate-700 mb-2;
+}
+
+/* Professional status indicators */
+.status-positive {
+  @apply text-emerald-700 bg-emerald-50 border-emerald-200;
+}
+
+.status-negative {
+  @apply text-red-700 bg-red-50 border-red-200;
+}
+
+.status-neutral {
+  @apply text-slate-700 bg-slate-50 border-slate-200;
+}
