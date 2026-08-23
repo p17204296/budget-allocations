@@ -71,7 +71,7 @@ function BudgetItemForm({ category, accounts, symbol, formData, isEditing, onCha
   return (
     <form onSubmit={onSubmit} className={`inline-form ${isEditing ? "contextual-editor" : ""}`}>
       {isEditing ? <div className="inline-form-heading"><span>Editing item</span><strong>{formData.name}</strong></div> : null}
-      <div className="form-grid form-grid-name"><label><span>Item name</span><input type="text" placeholder={category === "essentials" ? "e.g. Rent" : "e.g. Emergency fund"} value={formData.name} onChange={(event) => onChange("name", event.target.value)} className="form-input" required autoFocus /></label></div>
+      <div className="form-grid form-grid-name"><label><span>Item name</span><input type="text" placeholder={category === "essentials" ? "e.g. Rent" : "e.g. Emergency fund"} value={formData.name} onChange={(event) => onChange("name", event.target.value)} className="form-input" required autoFocus={!isEditing} /></label></div>
       <div className="form-grid"><label><span>Monthly amount ({symbol})</span><input type="number" placeholder="0.00" min="0" step="0.01" value={formData.amount} onChange={(event) => onChange("amount", event.target.value)} className="form-input" required /></label><label><span>Paid from</span><select value={formData.accountId} onChange={(event) => onChange("accountId", event.target.value)} className="form-input"><option value="">No account yet</option>{accounts.map((account) => <option key={account._id} value={account._id}>{account.name}</option>)}</select></label></div>
       <div className="form-actions"><button type="submit" className="btn-primary">{isEditing ? "Save changes" : "Add item"}</button><button type="button" onClick={onCancel} className="btn-secondary">Cancel</button></div>
     </form>
