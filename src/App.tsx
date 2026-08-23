@@ -9,7 +9,7 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-neutral-50">
       <header className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm h-16 flex justify-between items-center border-b border-slate-200 shadow-sm px-6">
-        <h2 className="text-xl font-semibold text-slate-800">Financial Planning Workspace</h2>
+        <h2 className="text-xl font-semibold text-slate-800">Budget Allocations</h2>
         <Authenticated>
           <SignOutButton />
         </Authenticated>
@@ -50,9 +50,9 @@ function Content() {
       <Unauthenticated>
         <div className="flex flex-col items-center justify-center min-h-[500px] gap-12">
           <div className="text-center max-w-2xl">
-            <h1 className="text-4xl font-bold text-slate-800 mb-6">Financial Planning Workspace</h1>
+            <h1 className="text-4xl font-bold text-slate-800 mb-6">Budget Allocations</h1>
             <p className="text-xl text-slate-600 leading-relaxed">
-              Professional budget allocation and financial planning tools designed for clarity and control over your finances.
+              Plan your budget, organise your accounts, and see every allocation in one clear place.
             </p>
           </div>
           <div className="w-full max-w-md">

@@ -1,7 +1,13 @@
 # Budget Allocation Planner App
   
 This is a personal budgeting application built with [Convex](https://convex.dev) and [Vite](https://vitejs.dev/).
-  
+
+## Try it free
+
+Budget Allocations is live and free to use. Create your budget, organise accounts, and see every allocation in one clear place — no download or payment required.
+
+**[Open the free live app →](https://budget-allocations.vercel.app/)**
+
 Create a local `.env.local` file with your own Convex deployment settings before running the app. This file is intentionally excluded from version control.
   
 ## Project structure
@@ -11,6 +17,8 @@ The frontend code is in the `src` directory and is built with [Vite](https://vit
 The backend code is in the `convex` directory.
   
 `npm run dev` will start the frontend and backend servers.
+
+Run `npm start` to use the same one-command local development workflow.
 
 ## App authentication
 
