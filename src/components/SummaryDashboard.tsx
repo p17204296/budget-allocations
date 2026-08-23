@@ -1,4 +1,5 @@
 import { getCurrencySymbol } from "../lib/currency";
+import { Card, Icon } from "./ui";
 
 interface SummaryDashboardProps {
   totalIncome: number;
@@ -9,101 +10,32 @@ interface SummaryDashboardProps {
   currency: string;
 }
 
-export function SummaryDashboard({
-  totalIncome,
-  totalEssentials,
-  totalSavings,
-  totalOutgoings,
-  netTotal,
-  currency,
-}: SummaryDashboardProps) {
-  const sym = getCurrencySymbol(currency);
+export function SummaryDashboard({ totalIncome, totalEssentials, totalSavings, totalOutgoings, netTotal, currency }: SummaryDashboardProps) {
+  const symbol = getCurrencySymbol(currency);
+  const essentialPercent = totalIncome > 0 ? (totalEssentials / totalIncome) * 100 : 0;
+  const savingsPercent = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
+  const usedPercent = Math.min(100, essentialPercent + savingsPercent);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden sticky top-28">
-      <div className="border-b border-slate-100 px-6 py-4">
-        <h2 className="text-xl font-semibold text-slate-800">Financial Summary</h2>
+    <Card className="summary-card">
+      <div className="summary-hero">
+        <div className="summary-kicker"><span><Icon name="wallet" /></span> Monthly position</div>
+        <p>Available after your plan</p>
+        <h1 className={netTotal < 0 ? "negative" : ""}>{netTotal < 0 ? "−" : ""}{symbol}{Math.abs(netTotal).toLocaleString()}</h1>
+        <div className={`balance-status ${netTotal < 0 ? "over" : "on-track"}`}><span />{netTotal < 0 ? "Budget needs attention" : "You’re within budget"}</div>
       </div>
-      
-      <div className="p-6 space-y-6">
-        {/* Income */}
-        <div className="flex justify-between items-center py-3">
-          <span className="text-slate-600 font-medium">Total Income</span>
-          <span className="font-semibold text-slate-800 text-lg">
-            {sym}{totalIncome.toLocaleString()}
-          </span>
+      <div className="summary-breakdown">
+        <div className="summary-row"><span>Monthly income</span><strong>{symbol}{totalIncome.toLocaleString()}</strong></div>
+        <div className="summary-row"><span>Total allocated</span><strong>{symbol}{totalOutgoings.toLocaleString()}</strong></div>
+        <div className="allocation-meter" aria-label={`${usedPercent.toFixed(0)} percent of income allocated`}>
+          <div className="meter-track"><span className="meter-essential" style={{ width: `${Math.min(100, essentialPercent)}%` }} /><span className="meter-saving" style={{ width: `${Math.min(100 - Math.min(100, essentialPercent), savingsPercent)}%` }} /></div>
+          <div className="meter-label"><span>{usedPercent.toFixed(0)}% allocated</span><span>{Math.max(0, 100 - usedPercent).toFixed(0)}% free</span></div>
         </div>
-
-        <hr className="border-slate-200" />
-
-        {/* Outgoings */}
-        <div className="space-y-3">
-          <div className="flex justify-between items-center py-2">
-            <span className="text-slate-600 flex items-center gap-3">
-              <div className="w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
-              Essential Expenses
-            </span>
-            <span className="font-medium text-amber-700">
-              {sym}{totalEssentials.toLocaleString()}
-            </span>
-          </div>
-          
-          <div className="flex justify-between items-center py-2">
-            <span className="text-slate-600 flex items-center gap-3">
-              <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></div>
-              Savings & Investments
-            </span>
-            <span className="font-medium text-emerald-700">
-              {sym}{totalSavings.toLocaleString()}
-            </span>
-          </div>
+        <div className="summary-legend">
+          <div><span className="legend-dot essential"/><p>Essentials</p><strong>{symbol}{totalEssentials.toLocaleString()}</strong></div>
+          <div><span className="legend-dot saving"/><p>Savings</p><strong>{symbol}{totalSavings.toLocaleString()}</strong></div>
         </div>
-
-        <hr className="border-slate-200" />
-
-        {/* Totals */}
-        <div className="flex justify-between items-center py-3">
-          <span className="text-slate-600 font-medium">Total Allocated</span>
-          <span className="font-semibold text-slate-800">
-            {sym}{totalOutgoings.toLocaleString()}
-          </span>
-        </div>
-
-        <hr className="border-slate-300" />
-
-        {/* Net Total */}
-        <div className="flex justify-between items-center py-3 bg-slate-50 -mx-3 px-3 rounded-lg">
-          <span className="font-semibold text-slate-800">Remaining Balance</span>
-          <span className={`font-bold text-lg ${
-            netTotal >= 0 ? "text-emerald-700" : "text-red-700"
-          }`}>
-            {sym}{netTotal.toLocaleString()}
-          </span>
-        </div>
-
-        {/* Progress Bar */}
-        {totalIncome > 0 && (
-          <div className="mt-8">
-            <div className="text-sm font-medium text-slate-700 mb-3">Budget Allocation</div>
-            <div className="w-full bg-slate-200 rounded-full h-4 overflow-hidden">
-              <div className="h-full flex">
-                <div
-                  className="bg-amber-500"
-                  style={{ width: `${(totalEssentials / totalIncome) * 100}%` }}
-                ></div>
-                <div
-                  className="bg-emerald-500"
-                  style={{ width: `${(totalSavings / totalIncome) * 100}%` }}
-                ></div>
-              </div>
-            </div>
-            <div className="flex justify-between text-xs text-slate-600 mt-2">
-              <span>{((totalEssentials / totalIncome) * 100).toFixed(1)}% Essential</span>
-              <span>{((totalSavings / totalIncome) * 100).toFixed(1)}% Savings</span>
-            </div>
-          </div>
-        )}
       </div>
-    </div>
+    </Card>
   );
 }

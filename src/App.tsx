@@ -4,33 +4,35 @@ import { SignInForm } from "./SignInForm";
 import { SignOutButton } from "./SignOutButton";
 import { Toaster } from "sonner";
 import { BudgetPlanner } from "./components/BudgetPlanner";
+import { Icon } from "./components/ui";
 
 export default function App() {
   return (
-    <div className="min-h-screen flex flex-col bg-neutral-50">
-      <header className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm h-16 flex justify-between items-center border-b border-slate-200 shadow-sm px-6">
-        <div className="flex items-center gap-2.5">
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="brand-lockup">
           <img
             src="/budget-allocations-logo.png"
-            alt=""
-            className="h-8 w-8 object-contain"
+            alt="Budget Allocations"
+            className="brand-logo"
           />
-          <h2 className="text-xl font-semibold text-slate-800">Budget Allocations</h2>
+          <div><p>Budget</p><strong>Allocations</strong></div>
         </div>
         <Authenticated>
           <SignOutButton />
         </Authenticated>
       </header>
-      <main className="flex-1 p-6">
+      <main className="app-main">
         <Content />
       </main>
       <Toaster 
-        position="top-right"
+        position="top-center"
         toastOptions={{
           style: {
-            background: 'white',
-            border: '1px solid #e2e8f0',
-            color: '#1e293b',
+            background: '#fffdf8',
+            border: '1px solid #d9d4c8',
+            color: '#18352c',
+            borderRadius: '14px',
           },
         }}
       />
@@ -43,26 +45,32 @@ function Content() {
 
   if (loggedInUser === undefined) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
+      <div className="loading-state" role="status" aria-label="Loading your budget">
+        <span className="loading-mark"><Icon name="wallet" /></span>
+        <p>Opening your budget…</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="app-container">
       <Authenticated>
         <BudgetPlanner />
       </Authenticated>
       <Unauthenticated>
-        <div className="flex flex-col items-center justify-center min-h-[500px] gap-12">
-          <div className="text-center max-w-2xl">
-            <h1 className="text-4xl font-bold text-slate-800 mb-6">Budget Allocations</h1>
-            <p className="text-xl text-slate-600 leading-relaxed">
-              Plan your budget, organise your accounts, and see every allocation in one clear place.
-            </p>
+        <div className="auth-layout">
+          <div className="auth-intro">
+            <p className="eyebrow">A calmer way to manage money</p>
+            <h1>Your money,<br/><em>mapped clearly.</em></h1>
+            <p className="auth-lead">Plan your monthly budget, give every pound a purpose, and know exactly what each account needs.</p>
+            <div className="auth-points">
+              <span><Icon name="overview" /> See the whole month at a glance</span>
+              <span><Icon name="allocations" /> Turn plans into account transfers</span>
+              <span><Icon name="shield" /> Private, simple and free to use</span>
+            </div>
           </div>
-          <div className="w-full max-w-md">
+          <div className="auth-card">
+            <div className="auth-card-heading"><span><Icon name="spark" /></span><div><p>Welcome</p><h2>Make a plan that sticks.</h2></div></div>
             <SignInForm />
           </div>
         </div>

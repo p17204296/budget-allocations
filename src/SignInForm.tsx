@@ -11,7 +11,7 @@ export function SignInForm() {
   return (
     <div className="w-full">
       <form
-        className="flex flex-col gap-form-field"
+        className="auth-form"
         onSubmit={(e) => {
           e.preventDefault();
           setSubmitting(true);
@@ -36,20 +36,22 @@ export function SignInForm() {
           className="auth-input-field"
           type="email"
           name="email"
-          placeholder="Email"
+          placeholder="you@example.com"
+          aria-label="Email address"
           required
         />
         <input
           className="auth-input-field"
           type="password"
           name="password"
-          placeholder="Password"
+          placeholder="Your password"
+          aria-label="Password"
           required
         />
         <button className="auth-button" type="submit" disabled={submitting}>
           {flow === "signIn" ? "Sign in" : "Sign up"}
         </button>
-        <div className="text-center text-sm text-secondary">
+        <div className="auth-switch">
           <span>
             {flow === "signIn"
               ? "Don't have an account? "
@@ -57,20 +59,18 @@ export function SignInForm() {
           </span>
           <button
             type="button"
-            className="text-primary hover:text-primary-hover hover:underline font-medium cursor-pointer"
+            className="auth-link"
             onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
           >
             {flow === "signIn" ? "Sign up instead" : "Sign in instead"}
           </button>
         </div>
       </form>
-      <div className="flex items-center justify-center my-3">
-        <hr className="my-4 grow border-gray-200" />
-        <span className="mx-4 text-secondary">or</span>
-        <hr className="my-4 grow border-gray-200" />
+      <div className="auth-divider">
+        <span>or continue without an account</span>
       </div>
-      <button className="auth-button" onClick={() => void signIn("anonymous")}>
-        Sign in anonymously
+      <button className="auth-button auth-button-secondary" onClick={() => void signIn("anonymous")}>
+        Try the app as a guest
       </button>
     </div>
   );
