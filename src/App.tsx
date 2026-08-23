@@ -1,29 +1,37 @@
+import { useState } from "react";
 import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { SignInForm } from "./SignInForm";
 import { SignOutButton } from "./SignOutButton";
 import { Toaster } from "sonner";
-import { BudgetPlanner } from "./components/BudgetPlanner";
+import { BudgetPlanner, type TabId } from "./components/BudgetPlanner";
 import { Icon } from "./components/ui";
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState<TabId>("overview");
+
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="brand-lockup">
+        <button
+          type="button"
+          className="brand-lockup"
+          onClick={() => setActiveTab("overview")}
+          aria-label="Go to overview"
+        >
           <img
             src="/budget-allocations-logo.png"
-            alt="Budget Allocations"
+            alt=""
             className="brand-logo"
           />
           <div><p>Budget</p><strong>Allocations</strong></div>
-        </div>
+        </button>
         <Authenticated>
           <SignOutButton />
         </Authenticated>
       </header>
       <main className="app-main">
-        <Content />
+        <Content activeTab={activeTab} onTabChange={setActiveTab} />
       </main>
       <Toaster 
         position="top-center"
@@ -40,7 +48,13 @@ export default function App() {
   );
 }
 
-function Content() {
+function Content({
+  activeTab,
+  onTabChange,
+}: {
+  activeTab: TabId;
+  onTabChange: (tab: TabId) => void;
+}) {
   const loggedInUser = useQuery(api.auth.loggedInUser);
 
   if (loggedInUser === undefined) {
@@ -55,7 +69,7 @@ function Content() {
   return (
     <div className="app-container">
       <Authenticated>
-        <BudgetPlanner />
+        <BudgetPlanner activeTab={activeTab} onTabChange={onTabChange} />
       </Authenticated>
       <Unauthenticated>
         <div className="auth-layout">

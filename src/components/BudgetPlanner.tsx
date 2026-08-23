@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { AccountAllocations } from "./AccountAllocations";
@@ -10,7 +10,7 @@ import { SummaryDashboard } from "./SummaryDashboard";
 import { Card, Icon, type IconName, SectionTitle } from "./ui";
 import { getCurrencySymbol } from "../lib/currency";
 
-type TabId = "overview" | "allocations" | "accounts" | "income" | "settings";
+export type TabId = "overview" | "allocations" | "accounts" | "income" | "settings";
 
 const tabs: { id: TabId; label: string; icon: IconName }[] = [
   { id: "overview", label: "Overview", icon: "overview" },
@@ -20,14 +20,17 @@ const tabs: { id: TabId; label: string; icon: IconName }[] = [
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
-export function BudgetPlanner() {
+type BudgetPlannerProps = {
+  activeTab: TabId;
+  onTabChange: (tab: TabId) => void;
+};
+
+export function BudgetPlanner({ activeTab, onTabChange }: BudgetPlannerProps) {
   const accountsQuery = useQuery(api.budget.getAccounts);
   const budgetItemsQuery = useQuery(api.budget.getBudgetItems);
   const incomeQuery = useQuery(api.budget.getIncome);
   const settings = useQuery(api.settings.getUserSettings);
   const initializeDefaultData = useMutation(api.budget.initializeDefaultData);
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
-
   const accounts = accountsQuery ?? [];
   const budgetItems = budgetItemsQuery ?? [];
   const income = incomeQuery ?? [];
@@ -57,7 +60,7 @@ export function BudgetPlanner() {
     <div className="planner-shell">
       <nav className="desktop-nav" aria-label="Budget sections">
         {tabs.map((tab) => (
-          <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={activeTab === tab.id ? "active" : ""} aria-current={activeTab === tab.id ? "page" : undefined}>
+          <button key={tab.id} type="button" onClick={() => onTabChange(tab.id)} className={activeTab === tab.id ? "active" : ""} aria-current={activeTab === tab.id ? "page" : undefined}>
             <Icon name={tab.icon} /><span>{tab.label}</span>
           </button>
         ))}
@@ -87,7 +90,7 @@ export function BudgetPlanner() {
 
       <nav className="mobile-nav" aria-label="Budget sections">
         {tabs.map((tab) => (
-          <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={activeTab === tab.id ? "active" : ""} aria-current={activeTab === tab.id ? "page" : undefined}>
+          <button key={tab.id} type="button" onClick={() => onTabChange(tab.id)} className={activeTab === tab.id ? "active" : ""} aria-current={activeTab === tab.id ? "page" : undefined}>
             <Icon name={tab.icon} /><span>{tab.label}</span>
           </button>
         ))}

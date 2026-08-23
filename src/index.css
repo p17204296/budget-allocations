@@ -32,7 +32,8 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 
 .app-shell { min-height: 100vh; }
 .topbar { position: sticky; top: 0; z-index: 30; height: 68px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1px solid rgba(217,212,200,.8); background: rgba(243,239,229,.88); backdrop-filter: blur(16px); }
-.brand-lockup { display: flex; align-items: center; gap: 10px; }
+.brand-lockup { display: flex; align-items: center; gap: 10px; padding: 0; color: inherit; border: 0; background: transparent; cursor: pointer; text-align: left; }
+.brand-lockup:hover strong { color: var(--coral); }
 .brand-logo { width: 35px; height: 35px; object-fit: contain; filter: saturate(.75); }
 .brand-lockup p, .brand-lockup strong { margin: 0; line-height: 1.02; }
 .brand-lockup p { color: var(--ink-soft); font-size: 11px; letter-spacing: .13em; text-transform: uppercase; }
@@ -233,7 +234,7 @@ label small { color: var(--ink-soft); font-weight: 500; }
 .auth-divider::before, .auth-divider::after { content: ""; height: 1px; flex: 1; background: var(--line-soft); }
 .auth-divider span { white-space: nowrap; }
 
-.confirm-dialog { width: auto; max-width: none; padding: 0; color: var(--ink); border: 0; background: transparent; inset: auto 12px max(12px, env(safe-area-inset-bottom)) 12px; }
+.confirm-dialog { width: min(440px, calc(100vw - 24px)); max-width: none; padding: 0; color: var(--ink); border: 0; background: transparent; inset: 0; margin: auto; }
 .confirm-dialog::backdrop { background: rgba(15,35,29,.58); backdrop-filter: blur(4px); animation: dialog-fade .18s ease-out both; }
 .confirm-dialog-panel { position: relative; width: 100%; padding: 25px 20px 20px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface); box-shadow: 0 28px 70px rgba(15,35,29,.28); animation: dialog-rise .24s ease-out both; }
 .confirm-dialog-icon { display: grid; width: 46px; height: 46px; place-items: center; margin-bottom: 17px; color: var(--danger); border-radius: 50%; background: #f9e1dc; }
