@@ -66,6 +66,7 @@ const dataLimitStatusResult = v.object({
   budgetItems: v.boolean(),
   income: v.boolean(),
 });
+const onboardingChoice = v.union(v.literal("empty"), v.literal("template"));
 
 type DatabaseCtx = QueryCtx | MutationCtx;
 
@@ -410,14 +411,49 @@ export const deleteIncome = mutation({
   },
 });
 
-export const initializeDefaultData = mutation({
+export const getOnboardingStatus = query({
   args: {},
-  returns: v.null(),
+  returns: v.union(v.literal("pending"), v.literal("empty"), v.literal("template")),
   handler: async (ctx) => {
     const auth = await currentUser(ctx);
+    if (!auth) return "pending";
+    if (auth.user.onboardingChoice) return auth.user.onboardingChoice;
+
+    const [accounts, budgetItems, income, assets, liabilities] = await Promise.all([
+      ctx.db.query("accounts").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(1),
+      ctx.db.query("budgetItems").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(1),
+      ctx.db.query("income").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(1),
+      ctx.db.query("assets").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(1),
+      ctx.db.query("liabilities").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(1),
+    ]);
+    return accounts.length + budgetItems.length + income.length + assets.length + liabilities.length > 0
+      ? "template"
+      : "pending";
+  },
+});
+
+export const initializeDefaultData = mutation({
+  args: { choice: onboardingChoice },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const auth = await currentUser(ctx);
     if (!auth) throw new ConvexError("You must be signed in.");
-    const existingAccounts = await ctx.db.query("accounts").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(1);
-    if (existingAccounts.length > 0) return null;
+    if (auth.user.onboardingChoice) return null;
+
+    if (args.choice === "empty") {
+      await ctx.db.patch(auth.userId, { onboardingChoice: "empty" });
+      return null;
+    }
+
+    const [existingAccounts, existingBudgetItems, existingIncome] = await Promise.all([
+      ctx.db.query("accounts").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(1),
+      ctx.db.query("budgetItems").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(1),
+      ctx.db.query("income").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(1),
+    ]);
+    if (existingAccounts.length + existingBudgetItems.length + existingIncome.length > 0) {
+      await ctx.db.patch(auth.userId, { onboardingChoice: "template" });
+      return null;
+    }
     const isGuest = auth.user.isAnonymous === true;
     const halifax = await ctx.db.insert("accounts", { userId: auth.userId, name: "Halifax", type: "current", balance: isGuest ? 2350 : undefined });
     const chase = await ctx.db.insert("accounts", { userId: auth.userId, name: "Chase", type: "current", balance: isGuest ? 780 : undefined });
@@ -439,6 +475,7 @@ export const initializeDefaultData = mutation({
       await ctx.db.insert("liabilities", { userId: auth.userId, name: "Mortgage", type: "mortgage", outstandingBalance: 192000 });
       await ctx.db.insert("liabilities", { userId: auth.userId, name: "Credit card", type: "credit_card", outstandingBalance: 850 });
     }
+    await ctx.db.patch(auth.userId, { onboardingChoice: "template" });
     return null;
   },
 });
