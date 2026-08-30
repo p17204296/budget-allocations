@@ -31,6 +31,7 @@ export function BudgetPlanner({ activeTab, onTabChange, isGuest }: BudgetPlanner
   const accountsQuery = useQuery(api.budget.getAccounts);
   const budgetItemsQuery = useQuery(api.budget.getBudgetItems);
   const incomeQuery = useQuery(api.budget.getIncome);
+  const dataLimitStatus = useQuery(api.budget.getDataLimitStatus);
   const settings = useQuery(api.settings.getUserSettings);
   const adminAccess = useQuery(api.admin.getAccess);
   const initializeDefaultData = useMutation(api.budget.initializeDefaultData);
@@ -56,6 +57,11 @@ export function BudgetPlanner({ activeTab, onTabChange, isGuest }: BudgetPlanner
   const symbol = getCurrencySymbol(currency);
   const isAdmin = adminAccess?.isAdmin ?? false;
   const tabs = isAdmin ? [...primaryTabs, { id: "admin" as const, label: "Admin", icon: "shield" as const }] : primaryTabs;
+  const overLimitLabels = dataLimitStatus ? [
+    dataLimitStatus.accounts ? "accounts" : null,
+    dataLimitStatus.budgetItems ? "budget items" : null,
+    dataLimitStatus.income ? "income sources" : null,
+  ].filter((label): label is string => label !== null) : [];
 
   useEffect(() => {
     if (adminAccess !== undefined && !adminAccess.isAdmin && activeTab === "admin") onTabChange("overview");
@@ -76,7 +82,8 @@ export function BudgetPlanner({ activeTab, onTabChange, isGuest }: BudgetPlanner
       </nav>
 
       <div className="planner-content" key={activeTab}>
-        {isGuest ? <div className="guest-demo-banner"><span><Icon name="shield" /></span><div><strong>Your seven-day guest workspace</strong><p>Try every feature with your own figures. Create an account if you want to keep them beyond seven days.</p></div></div> : null}
+        {isGuest ? <div className="guest-demo-banner"><span><Icon name="shield" /></span><div><strong>Your seven-day guest workspace</strong><p>Try every feature with your own figures. This temporary workspace is automatically deleted after seven days.</p></div></div> : null}
+        {overLimitLabels.length > 0 ? <div className="guest-demo-banner"><span><Icon name="shield" /></span><div><strong>Older workspace over the record limit</strong><p>You have more than 200 {overLimitLabels.join(", ")}. Delete records you no longer need; hidden records will appear as space becomes available.</p></div></div> : null}
         {activeTab === "overview" ? (
           <div className="overview-layout">
             <SummaryDashboard totalIncome={totalIncome} totalEssentials={totalEssentials} totalSavings={totalSavings} totalOutgoings={totalOutgoings} netTotal={netTotal} currency={currency} />

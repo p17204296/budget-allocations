@@ -61,6 +61,11 @@ const incomeResult = v.object({
   amount: v.number(),
   description: v.string(),
 });
+const dataLimitStatusResult = v.object({
+  accounts: v.boolean(),
+  budgetItems: v.boolean(),
+  income: v.boolean(),
+});
 
 type DatabaseCtx = QueryCtx | MutationCtx;
 
@@ -196,6 +201,25 @@ export const getIncome = query({
     if (!auth) return [];
     const income = await ctx.db.query("income").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(MAX_USER_ROWS);
     return income.map(({ userId: _userId, ...item }) => item);
+  },
+});
+
+export const getDataLimitStatus = query({
+  args: {},
+  returns: dataLimitStatusResult,
+  handler: async (ctx) => {
+    const auth = await currentUser(ctx);
+    if (!auth) return { accounts: false, budgetItems: false, income: false };
+    const [accounts, budgetItems, income] = await Promise.all([
+      ctx.db.query("accounts").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(MAX_USER_ROWS + 1),
+      ctx.db.query("budgetItems").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(MAX_USER_ROWS + 1),
+      ctx.db.query("income").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(MAX_USER_ROWS + 1),
+    ]);
+    return {
+      accounts: accounts.length > MAX_USER_ROWS,
+      budgetItems: budgetItems.length > MAX_USER_ROWS,
+      income: income.length > MAX_USER_ROWS,
+    };
   },
 });
 

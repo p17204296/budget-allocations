@@ -80,8 +80,8 @@ export function PageHeader({ eyebrow, title, description, action }: { eyebrow?: 
   );
 }
 
-export function IconButton({ label, icon, tone = "default", onClick }: { label: string; icon: "edit" | "trash"; tone?: "default" | "danger"; onClick: () => void }) {
-  return <button type="button" onClick={onClick} className={`icon-button ${tone === "danger" ? "icon-button-danger" : ""}`} aria-label={label} title={label}><Icon name={icon} className="h-4 w-4" /></button>;
+export function IconButton({ label, icon, tone = "default", disabled = false, onClick }: { label: string; icon: "edit" | "trash"; tone?: "default" | "danger"; disabled?: boolean; onClick: () => void }) {
+  return <button type="button" onClick={onClick} disabled={disabled} className={`icon-button ${tone === "danger" ? "icon-button-danger" : ""}`} aria-label={label} title={label}><Icon name={icon} className="h-4 w-4" /></button>;
 }
 
 export function EmptyState({ title, description }: { title: string; description: string }) {
