@@ -6,9 +6,19 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 
 const MAX_USER_ROWS = 200;
 const MAX_NAME_LENGTH = 80;
+const MAX_CUSTOM_TYPE_LENGTH = 40;
 
 const accountType = v.union(v.literal("current"), v.literal("savings"));
-const assetType = v.union(v.literal("property"), v.literal("investment"), v.literal("pension"), v.literal("other"));
+const assetType = v.union(
+  v.literal("property"),
+  v.literal("investment"),
+  v.literal("pension"),
+  v.literal("vehicle"),
+  v.literal("business"),
+  v.literal("valuables"),
+  v.literal("crypto"),
+  v.literal("other"),
+);
 const liabilityType = v.union(v.literal("credit_card"), v.literal("loan"), v.literal("mortgage"), v.literal("other"));
 const budgetCategory = v.union(v.literal("essentials"), v.literal("savings"));
 
@@ -24,6 +34,7 @@ const assetResult = v.object({
   _creationTime: v.number(),
   name: v.string(),
   type: assetType,
+  customType: v.optional(v.string()),
   currentValue: v.number(),
 });
 const liabilityResult = v.object({
@@ -70,6 +81,15 @@ function cleanName(value: string, label = "Name") {
   const cleaned = value.trim();
   if (!cleaned) throw new ConvexError(`${label} is required.`);
   if (cleaned.length > MAX_NAME_LENGTH) throw new ConvexError(`${label} must be ${MAX_NAME_LENGTH} characters or fewer.`);
+  return cleaned;
+}
+
+function cleanCustomType(value: string | undefined) {
+  const cleaned = value?.trim();
+  if (!cleaned) return undefined;
+  if (cleaned.length > MAX_CUSTOM_TYPE_LENGTH) {
+    throw new ConvexError(`Custom asset type must be ${MAX_CUSTOM_TYPE_LENGTH} characters or fewer.`);
+  }
   return cleaned;
 }
 
@@ -211,21 +231,28 @@ export const deleteAccount = mutation({
 });
 
 export const upsertAsset = mutation({
-  args: { id: v.optional(v.id("assets")), name: v.string(), type: assetType, currentValue: v.number() },
+  args: {
+    id: v.optional(v.id("assets")),
+    name: v.string(),
+    type: assetType,
+    customType: v.optional(v.string()),
+    currentValue: v.number(),
+  },
   returns: v.id("assets"),
   handler: async (ctx, args) => {
     const userId = await requireUser(ctx);
     const name = cleanName(args.name, "Asset name");
+    const customType = args.type === "other" ? cleanCustomType(args.customType) : undefined;
     const currentValue = finiteAmount(args.currentValue, "Current value");
     if (args.id) {
       const asset = await ctx.db.get("assets", args.id);
       if (!asset || asset.userId !== userId) throw new ConvexError("Asset not found.");
-      await ctx.db.patch(args.id, { name, type: args.type, currentValue });
+      await ctx.db.patch(args.id, { name, type: args.type, customType, currentValue });
       return args.id;
     }
     const existing = await ctx.db.query("assets").withIndex("by_user", (q) => q.eq("userId", userId)).take(MAX_USER_ROWS);
     if (existing.length >= MAX_USER_ROWS) throw new ConvexError("Asset limit reached.");
-    return await ctx.db.insert("assets", { userId, name, type: args.type, currentValue });
+    return await ctx.db.insert("assets", { userId, name, type: args.type, customType, currentValue });
   },
 });
 

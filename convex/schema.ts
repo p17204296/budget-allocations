@@ -17,8 +17,13 @@ const applicationTables = {
       v.literal("property"),
       v.literal("investment"),
       v.literal("pension"),
+      v.literal("vehicle"),
+      v.literal("business"),
+      v.literal("valuables"),
+      v.literal("crypto"),
       v.literal("other"),
     ),
+    customType: v.optional(v.string()),
     currentValue: v.number(),
   }).index("by_user", ["userId"]),
 

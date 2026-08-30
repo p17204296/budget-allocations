@@ -199,6 +199,8 @@ label small { color: var(--ink-soft); font-weight: 500; }
 .net-worth-ledger span { color: rgba(255,255,255,.52); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
 .net-worth-ledger strong { margin-top: 5px; font-family: Georgia, "Times New Roman", serif; font-size: 14px; font-weight: 500; }
 .net-worth-ledger .liability-total strong { color: #ffbaa9; }
+.net-worth-stack { display: grid; gap: 16px; }
+.net-worth-actions { padding-inline: 2px; }
 .asset-avatar { color: #286e59; background: var(--mint-soft); }
 .debt-avatar { color: var(--danger); background: #f9e1dc; }
 .row-value { flex: none; font-family: Georgia, "Times New Roman", serif; font-size: 14px; font-weight: 600; }
@@ -424,6 +426,7 @@ label small { color: var(--ink-soft); font-weight: 500; }
   .page-heading { flex-direction: row; align-items: flex-end; justify-content: space-between; }
   .page-heading-action .btn-primary { width: auto; }
   .page-heading-actions { display: flex; }
+  .net-worth-actions { justify-content: flex-end; }
   .auth-card { padding: 28px; }
   .feedback-types label span { display: block; }
   .feedback-dialog-header { padding: 26px 28px 20px; }
