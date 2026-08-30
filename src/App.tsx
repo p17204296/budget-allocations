@@ -1,12 +1,54 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { SignInForm } from "./SignInForm";
 import { SignOutButton } from "./SignOutButton";
-import { Toaster } from "sonner";
+import { Toaster, type ToasterProps } from "sonner";
 import { BudgetPlanner, type TabId } from "./components/BudgetPlanner";
 import { FeedbackDialog } from "./components/FeedbackDialog";
 import { Icon } from "./components/ui";
+
+type ToastPosition = NonNullable<ToasterProps["position"]>;
+
+const MOBILE_TOAST_OFFSET = { top: 80, right: 14, left: 14 };
+const TABLET_TOAST_OFFSET = { top: 92, right: 28 };
+const DESKTOP_TOAST_OFFSET = { right: 34, bottom: 28 };
+const APP_TOAST_OPTIONS: NonNullable<ToasterProps["toastOptions"]> = {
+  style: {
+    background: "#fffdf8",
+    border: "1px solid #d9d4c8",
+    color: "#18352c",
+    borderRadius: "14px",
+  },
+};
+
+function getToastPosition(): ToastPosition {
+  if (typeof window === "undefined") return "top-center";
+  if (window.matchMedia("(min-width: 900px)").matches) return "bottom-right";
+  if (window.matchMedia("(min-width: 600px)").matches) return "top-right";
+  return "top-center";
+}
+
+function ResponsiveToaster() {
+  const [position, setPosition] = useState<ToastPosition>(getToastPosition);
+
+  useEffect(() => {
+    const tablet = window.matchMedia("(min-width: 600px)");
+    const desktop = window.matchMedia("(min-width: 900px)");
+    const updatePosition = () => setPosition(desktop.matches ? "bottom-right" : tablet.matches ? "top-right" : "top-center");
+
+    tablet.addEventListener("change", updatePosition);
+    desktop.addEventListener("change", updatePosition);
+    return () => {
+      tablet.removeEventListener("change", updatePosition);
+      desktop.removeEventListener("change", updatePosition);
+    };
+  }, []);
+
+  const offset = position === "bottom-right" ? DESKTOP_TOAST_OFFSET : TABLET_TOAST_OFFSET;
+
+  return <Toaster position={position} offset={offset} mobileOffset={MOBILE_TOAST_OFFSET} toastOptions={APP_TOAST_OPTIONS} />;
+}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>("overview");
@@ -39,17 +81,7 @@ export default function App() {
       <main className="app-main">
         <Content activeTab={activeTab} onTabChange={setActiveTab} />
       </main>
-      <Toaster 
-        position="top-center"
-        toastOptions={{
-          style: {
-            background: '#fffdf8',
-            border: '1px solid #d9d4c8',
-            color: '#18352c',
-            borderRadius: '14px',
-          },
-        }}
-      />
+      <ResponsiveToaster />
     </div>
   );
 }
