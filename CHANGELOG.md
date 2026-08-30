@@ -4,13 +4,7 @@ All notable changes to Budget Allocations are documented here.
 
 This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The version history is currently maintained by feature milestone rather than published package releases.
 
-## [Unreleased]
-
-### Changed
-
-- Moved the Account, Asset, and Debt actions to the bottom of the net worth card so the summary remains the primary focus.
-
-## [2026-08-30] — Financial picture expansion
+## [2026-08-30] — Financial picture and UX update
 
 ### Added
 
@@ -20,6 +14,10 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). T
 - Savings goal details including target amounts, current progress, target dates, and monthly guidance.
 - Editing and deletion flows for accounts, assets, and debts with ownership checks.
 - Currency selection across budget and financial picture views.
+
+### Changed
+
+- Moved the Account, Asset, and Debt actions to the bottom of the net worth card so the summary remains the primary focus.
 
 ## [2026-08-23] — Workspace improvements
 
