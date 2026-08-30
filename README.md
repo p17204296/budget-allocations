@@ -1,36 +1,94 @@
-# Budget Allocation Planner App
-  
-This is a personal budgeting application built with [Convex](https://convex.dev) and [Vite](https://vitejs.dev/).
+# Budget Allocations
+A calm, practical budgeting app for planning monthly spending, assigning money to accounts, and keeping a clear view of your wider financial position.
 
-## Try it free
+**[Try Budget Allocations free →](https://budget-allocations.vercel.app/)**
 
-Budget Allocations is live and free to use. Create your budget, organise accounts, and see every allocation in one clear place — no download or payment required.
+## What you can do
 
-**[Open the free live app →](https://budget-allocations.vercel.app/)**
+- Build a monthly plan from income, essential expenses, and savings goals.
+- Assign budget items to current or savings accounts and view the resulting transfer plan.
+- Track account balances, property, investments, pensions, and other assets.
+- Record debts and see net worth calculated from your latest manual figures.
+- Choose the currency used throughout the app.
+- Start with a private seven-day guest workspace or create an account with email and password.
+- Submit feedback from inside the app.
 
-Create a local `.env.local` file with your own Convex deployment settings before running the app. This file is intentionally excluded from version control.
-  
+## Tech stack
+
+- React and TypeScript
+- Vite
+- Convex for the database, backend functions, and authentication
+- Convex Auth for password and anonymous sign-in
+
+## Local development
+
+### Prerequisites
+
+- Node.js 18 or newer
+- A Convex account and development deployment
+
+### Setup
+
+1. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+2. Copy the environment template and add your deployment values:
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   Keep `.env.local` private. It is excluded from version control.
+
+3. Start the frontend and Convex development servers:
+
+   ```bash
+   npm run dev
+   ```
+
+   Or use the equivalent one-command shortcut:
+
+   ```bash
+   npm start
+   ```
+
+The Vite frontend runs alongside `convex dev`, which watches and updates backend functions as they change.
+
+## Environment variables
+
+`.env.example` lists the optional server-side values used by the app:
+
+- `ADMIN_EMAILS` — comma-separated email addresses with access to the admin area.
+- `RESEND_API_KEY` — enables password-reset emails through Resend.
+- `AUTH_EMAIL_FROM` — verified sender address for password-reset emails.
+- `APP_URL` — public app URL used by authentication-related flows.
+
+Convex also needs the deployment variables used by the Vite client, including `VITE_CONVEX_URL` and `CONVEX_DEPLOYMENT`. These are normally supplied by the Convex CLI for the selected development deployment.
+
+## Useful commands
+
+```bash
+npm run dev    # Start Vite and Convex in watch mode
+npm run build  # Create a production frontend build
+npm run lint   # Type-check, validate Convex, and build
+```
+
+For production deployment, follow the [Convex production documentation](https://docs.convex.dev/production/) and the [Vercel deployment documentation](https://vercel.com/docs/deployments).
+
 ## Project structure
-  
-The frontend code is in the `src` directory and is built with [Vite](https://vitejs.dev/).
-  
-The backend code is in the `convex` directory.
-  
-`npm run dev` will start the frontend and backend servers.
 
-Run `npm start` to use the same one-command local development workflow.
+```text
+src/       React frontend and UI components
+convex/    Database schema, queries, mutations, and authentication
+public/    Static assets
+```
 
-## App authentication
+## Documentation
 
-The app uses [Convex Auth](https://auth.convex.dev/) with Anonymous auth for easy sign in. You may wish to change this before deploying your app.
-
-## Developing and deploying your app
-
-Check out the [Convex docs](https://docs.convex.dev/) for more information on how to develop with Convex.
-* If you're new to Convex, the [Overview](https://docs.convex.dev/understanding/) is a good place to start
-* Check out the [Hosting and Deployment](https://docs.convex.dev/production/) docs for how to deploy your app
-* Read the [Best Practices](https://docs.convex.dev/understanding/best-practices/) guide for tips on how to improve you app further
-
-## HTTP API
-
-User-defined http routes are defined in the `convex/router.ts` file. We split these routes into a separate file from `convex/http.ts` to allow us to prevent the LLM from modifying the authentication routes.
+- [Changelog](./CHANGELOG.md)
+- [Convex documentation](https://docs.convex.dev/)
+- [Convex Auth documentation](https://labs.convex.dev/auth)
+- [Vite documentation](https://vitejs.dev/)

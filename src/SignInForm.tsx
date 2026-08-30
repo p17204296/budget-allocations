@@ -120,7 +120,7 @@ export function SignInForm() {
         Try the app as a guest
       </button>
       <p className="auth-guest-note">
-        Guest sessions are temporary. Guest accounts and their data are deleted after 7 days — create an account to keep your budget.
+        Try every feature without signing up. Guest data is private to this session and deleted after 7 days.
       </p>
     </div>
   );

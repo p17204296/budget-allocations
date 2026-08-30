@@ -10,14 +10,47 @@ const applicationTables = {
     balance: v.optional(v.number()),
   }).index("by_user", ["userId"]),
 
+  assets: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    type: v.union(
+      v.literal("property"),
+      v.literal("investment"),
+      v.literal("pension"),
+      v.literal("vehicle"),
+      v.literal("business"),
+      v.literal("valuables"),
+      v.literal("crypto"),
+      v.literal("other"),
+    ),
+    customType: v.optional(v.string()),
+    currentValue: v.number(),
+  }).index("by_user", ["userId"]),
+
+  liabilities: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    type: v.union(
+      v.literal("credit_card"),
+      v.literal("loan"),
+      v.literal("mortgage"),
+      v.literal("other"),
+    ),
+    outstandingBalance: v.number(),
+  }).index("by_user", ["userId"]),
+
   budgetItems: defineTable({
     userId: v.id("users"),
     name: v.string(),
     category: v.union(v.literal("essentials"), v.literal("savings")),
     amount: v.number(),
     accountId: v.optional(v.id("accounts")),
+    targetAmount: v.optional(v.number()),
+    currentSaved: v.optional(v.number()),
+    targetDate: v.optional(v.number()),
   }).index("by_user", ["userId"])
-   .index("by_user_and_category", ["userId", "category"]),
+   .index("by_user_and_category", ["userId", "category"])
+   .index("by_user_and_account", ["userId", "accountId"]),
 
   income: defineTable({
     userId: v.id("users"),
