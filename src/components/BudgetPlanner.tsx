@@ -38,6 +38,7 @@ export function BudgetPlanner({ activeTab, onTabChange, isGuest }: BudgetPlanner
   const initializeDefaultData = useMutation(api.budget.initializeDefaultData);
   const [onboardingChoice, setOnboardingChoice] = useState<"empty" | "template" | null>(null);
   const [onboardingError, setOnboardingError] = useState("");
+  const [guestInitializationError, setGuestInitializationError] = useState("");
   const accounts = accountsQuery ?? [];
   const budgetItems = budgetItemsQuery ?? [];
   const income = incomeQuery ?? [];
@@ -46,7 +47,9 @@ export function BudgetPlanner({ activeTab, onTabChange, isGuest }: BudgetPlanner
 
   useEffect(() => {
     if (!isLoading && isGuest && onboardingStatus === "pending") {
-      void initializeDefaultData({ choice: "template" });
+      void initializeDefaultData({ choice: "template" }).catch(() => {
+        setGuestInitializationError("We couldn’t load the guest template. Check your connection and try again.");
+      });
     }
   }, [initializeDefaultData, isGuest, isLoading, onboardingStatus]);
 
@@ -70,8 +73,30 @@ export function BudgetPlanner({ activeTab, onTabChange, isGuest }: BudgetPlanner
     if (adminAccess !== undefined && !adminAccess.isAdmin && activeTab === "admin") onTabChange("overview");
   }, [activeTab, adminAccess, onTabChange]);
 
-  if (isLoading || onboardingStatus === undefined || (isGuest && onboardingStatus === "pending")) {
+  if (isLoading || onboardingStatus === undefined || (isGuest && onboardingStatus === "pending" && !guestInitializationError)) {
     return <div className="planner-skeleton"><div /><div /><div /></div>;
+  }
+
+  if (isGuest && onboardingStatus === "pending") {
+    const retryGuestInitialization = async () => {
+      setGuestInitializationError("");
+      try {
+        await initializeDefaultData({ choice: "template" });
+      } catch {
+        setGuestInitializationError("We still couldn’t load the guest template. Please try again.");
+      }
+    };
+
+    return (
+      <section className="onboarding" aria-labelledby="guest-setup-title">
+        <p className="eyebrow">Guest workspace</p>
+        <h1 id="guest-setup-title">The starter template didn’t load.</h1>
+        <p className="onboarding-lead" role="alert">{guestInitializationError}</p>
+        <button type="button" className="auth-button onboarding-retry" onClick={() => void retryGuestInitialization()}>
+          Retry guest setup
+        </button>
+      </section>
+    );
   }
 
   if (!isGuest && onboardingStatus === "pending") {

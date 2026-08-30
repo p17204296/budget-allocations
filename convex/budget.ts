@@ -433,24 +433,27 @@ export const getOnboardingStatus = query({
 });
 
 export const initializeDefaultData = mutation({
-  args: { choice: onboardingChoice },
+  args: { choice: v.optional(onboardingChoice) },
   returns: v.null(),
   handler: async (ctx, args) => {
     const auth = await currentUser(ctx);
     if (!auth) throw new ConvexError("You must be signed in.");
     if (auth.user.onboardingChoice) return null;
+    const choice = args.choice ?? "template";
 
-    if (args.choice === "empty") {
+    if (choice === "empty") {
       await ctx.db.patch(auth.userId, { onboardingChoice: "empty" });
       return null;
     }
 
-    const [existingAccounts, existingBudgetItems, existingIncome] = await Promise.all([
+    const [existingAccounts, existingBudgetItems, existingIncome, existingAssets, existingLiabilities] = await Promise.all([
       ctx.db.query("accounts").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(1),
       ctx.db.query("budgetItems").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(1),
       ctx.db.query("income").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(1),
+      ctx.db.query("assets").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(1),
+      ctx.db.query("liabilities").withIndex("by_user", (q) => q.eq("userId", auth.userId)).take(1),
     ]);
-    if (existingAccounts.length + existingBudgetItems.length + existingIncome.length > 0) {
+    if (existingAccounts.length + existingBudgetItems.length + existingIncome.length + existingAssets.length + existingLiabilities.length > 0) {
       await ctx.db.patch(auth.userId, { onboardingChoice: "template" });
       return null;
     }

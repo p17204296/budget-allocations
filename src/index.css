@@ -324,6 +324,7 @@ label small { color: var(--ink-soft); font-weight: 500; }
 .onboarding-option em { margin-top: 6px; color: var(--coral); font-size: 10px; font-style: normal; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .onboarding-option-featured { border-color: rgba(237,106,77,.45); background: #fffaf5; }
 .onboarding-error { margin: 16px 0 0; color: var(--danger); font-size: 12px; font-weight: 700; }
+.onboarding-retry { width: min(260px, 100%); margin: 24px auto 0; }
 
 .confirm-dialog { width: min(440px, calc(100vw - 24px)); max-width: none; padding: 0; color: var(--ink); border: 0; background: transparent; inset: 0; margin: auto; }
 .confirm-dialog::backdrop { background: rgba(15,35,29,.58); backdrop-filter: blur(4px); animation: dialog-fade .18s ease-out both; }
