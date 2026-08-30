@@ -311,6 +311,20 @@ label small { color: var(--ink-soft); font-weight: 500; }
 .auth-divider::before, .auth-divider::after { content: ""; height: 1px; flex: 1; background: var(--line-soft); }
 .auth-divider span { white-space: nowrap; }
 .auth-guest-note { margin: 10px 2px 0; color: var(--ink-soft); font-size: 11px; line-height: 1.5; text-align: center; }
+.onboarding { width: min(760px, 100%); margin: clamp(38px, 9vh, 100px) auto; text-align: center; }
+.onboarding h1 { margin: 7px 0 10px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(34px, 7vw, 52px); font-weight: 500; letter-spacing: -.04em; }
+.onboarding-lead { max-width: 570px; margin: 0 auto; color: var(--ink-soft); font-size: 14px; line-height: 1.6; }
+.onboarding-options { display: grid; gap: 14px; margin-top: 30px; text-align: left; }
+.onboarding-option { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 5px 13px; padding: 20px; color: var(--ink); border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow); cursor: pointer; transition: transform .18s, border-color .18s, box-shadow .18s; }
+.onboarding-option:disabled { cursor: wait; opacity: .72; }
+.onboarding-option-icon { grid-row: 1 / 4; display: grid; width: 42px; height: 42px; place-items: center; color: var(--coral); border-radius: 13px; background: var(--coral-soft); }
+.onboarding-option-icon svg { width: 20px; }
+.onboarding-option strong { font-family: Georgia, "Times New Roman", serif; font-size: 19px; font-weight: 600; }
+.onboarding-option > span:nth-of-type(2) { color: var(--ink-soft); font-size: 11px; line-height: 1.5; }
+.onboarding-option em { margin-top: 6px; color: var(--coral); font-size: 10px; font-style: normal; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.onboarding-option-featured { border-color: rgba(237,106,77,.45); background: #fffaf5; }
+.onboarding-error { margin: 16px 0 0; color: var(--danger); font-size: 12px; font-weight: 700; }
+.onboarding-retry { width: min(260px, 100%); margin: 24px auto 0; }
 
 .confirm-dialog { width: min(440px, calc(100vw - 24px)); max-width: none; padding: 0; color: var(--ink); border: 0; background: transparent; inset: 0; margin: auto; }
 .confirm-dialog::backdrop { background: rgba(15,35,29,.58); backdrop-filter: blur(4px); animation: dialog-fade .18s ease-out both; }
@@ -402,6 +416,7 @@ label small { color: var(--ink-soft); font-weight: 500; }
 .reset-dialog-panel strong { color: var(--ink); overflow-wrap: anywhere; }
 
 @media (min-width: 600px) {
+  .onboarding-options { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .topbar { height: 76px; padding-inline: 28px; }
   .sign-out-button { padding: 0 16px; }
   .feedback-button { padding: 0 16px; }

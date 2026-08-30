@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { AccountAllocations } from "./AccountAllocations";
@@ -34,7 +34,11 @@ export function BudgetPlanner({ activeTab, onTabChange, isGuest }: BudgetPlanner
   const dataLimitStatus = useQuery(api.budget.getDataLimitStatus);
   const settings = useQuery(api.settings.getUserSettings);
   const adminAccess = useQuery(api.admin.getAccess);
+  const onboardingStatus = useQuery(api.budget.getOnboardingStatus);
   const initializeDefaultData = useMutation(api.budget.initializeDefaultData);
+  const [onboardingChoice, setOnboardingChoice] = useState<"empty" | "template" | null>(null);
+  const [onboardingError, setOnboardingError] = useState("");
+  const [guestInitializationError, setGuestInitializationError] = useState("");
   const accounts = accountsQuery ?? [];
   const budgetItems = budgetItemsQuery ?? [];
   const income = incomeQuery ?? [];
@@ -42,10 +46,12 @@ export function BudgetPlanner({ activeTab, onTabChange, isGuest }: BudgetPlanner
   const isLoading = accountsQuery === undefined || budgetItemsQuery === undefined || incomeQuery === undefined;
 
   useEffect(() => {
-    if (!isLoading && accounts.length === 0 && budgetItems.length === 0 && income.length === 0) {
-      void initializeDefaultData();
+    if (!isLoading && isGuest && onboardingStatus === "pending") {
+      void initializeDefaultData({ choice: "template" }).catch(() => {
+        setGuestInitializationError("We couldn’t load the guest template. Check your connection and try again.");
+      });
     }
-  }, [accounts.length, budgetItems.length, income.length, initializeDefaultData, isLoading]);
+  }, [initializeDefaultData, isGuest, isLoading, onboardingStatus]);
 
   const essentialItems = budgetItems.filter((item) => item.category === "essentials");
   const savingsItems = budgetItems.filter((item) => item.category === "savings");
@@ -67,8 +73,66 @@ export function BudgetPlanner({ activeTab, onTabChange, isGuest }: BudgetPlanner
     if (adminAccess !== undefined && !adminAccess.isAdmin && activeTab === "admin") onTabChange("overview");
   }, [activeTab, adminAccess, onTabChange]);
 
-  if (isLoading) {
+  if (isLoading || onboardingStatus === undefined || (isGuest && onboardingStatus === "pending" && !guestInitializationError)) {
     return <div className="planner-skeleton"><div /><div /><div /></div>;
+  }
+
+  if (isGuest && onboardingStatus === "pending") {
+    const retryGuestInitialization = async () => {
+      setGuestInitializationError("");
+      try {
+        await initializeDefaultData({ choice: "template" });
+      } catch {
+        setGuestInitializationError("We still couldn’t load the guest template. Please try again.");
+      }
+    };
+
+    return (
+      <section className="onboarding" aria-labelledby="guest-setup-title">
+        <p className="eyebrow">Guest workspace</p>
+        <h1 id="guest-setup-title">The starter template didn’t load.</h1>
+        <p className="onboarding-lead" role="alert">{guestInitializationError}</p>
+        <button type="button" className="auth-button onboarding-retry" onClick={() => void retryGuestInitialization()}>
+          Retry guest setup
+        </button>
+      </section>
+    );
+  }
+
+  if (!isGuest && onboardingStatus === "pending") {
+    const finishOnboarding = async (choice: "empty" | "template") => {
+      setOnboardingChoice(choice);
+      setOnboardingError("");
+      try {
+        await initializeDefaultData({ choice });
+      } catch {
+        setOnboardingError("We couldn’t prepare your workspace. Please try again.");
+        setOnboardingChoice(null);
+      }
+    };
+
+    return (
+      <section className="onboarding" aria-labelledby="onboarding-title">
+        <p className="eyebrow">Set up your workspace</p>
+        <h1 id="onboarding-title">How would you like to begin?</h1>
+        <p className="onboarding-lead">Choose a clean slate for your real numbers, or explore a ready-made budget you can edit.</p>
+        <div className="onboarding-options">
+          <button type="button" className="onboarding-option" onClick={() => void finishOnboarding("empty")} disabled={onboardingChoice !== null}>
+            <span className="onboarding-option-icon"><Icon name="plus" /></span>
+            <strong>Start from scratch</strong>
+            <span>Begin with an empty budget and add your accounts, income, and expenses yourself.</span>
+            <em>{onboardingChoice === "empty" ? "Preparing…" : "Choose empty workspace"}</em>
+          </button>
+          <button type="button" className="onboarding-option onboarding-option-featured" onClick={() => void finishOnboarding("template")} disabled={onboardingChoice !== null}>
+            <span className="onboarding-option-icon"><Icon name="spark" /></span>
+            <strong>Use a starter template</strong>
+            <span>See a sample monthly plan with accounts, income, essentials, and savings goals.</span>
+            <em>{onboardingChoice === "template" ? "Preparing…" : "Choose starter template"}</em>
+          </button>
+        </div>
+        {onboardingError ? <p className="onboarding-error" role="alert">{onboardingError}</p> : null}
+      </section>
+    );
   }
 
   return (
