@@ -15,6 +15,11 @@ export type IconName =
   | "mail"
   | "lock"
   | "currency"
+  | "property"
+  | "investment"
+  | "pension"
+  | "debt"
+  | "target"
   | "spark"
   | "feedback"
   | "close"
@@ -35,6 +40,11 @@ const paths: Record<IconName, ReactNode> = {
   mail: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></>,
   lock: <><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></>,
   currency: <><circle cx="12" cy="12" r="9"/><path d="M16 8.5c-.7-1-1.8-1.5-3.2-1.5-2 0-3.3 1-3.3 2.5 0 3.8 7 1.7 7 5.2 0 1.5-1.4 2.5-3.5 2.5-1.6 0-3-.6-3.8-1.8"/><path d="M13 5v14"/></>,
+  property: <><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></>,
+  investment: <><path d="M4 19V9M10 19V5M16 19v-7M22 19V3"/><path d="M2 19h22"/></>,
+  pension: <><circle cx="12" cy="7" r="4"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/><path d="M12 13v8"/></>,
+  debt: <><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18M7 15h4"/></>,
+  target: <><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></>,
   spark: <><path d="m12 3 1.3 4.2L17 9l-3.7 1.8L12 15l-1.3-4.2L7 9l3.7-1.8L12 3Z"/><path d="m19 15 .7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7L19 15Z"/></>,
   feedback: <><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z"/><path d="M8 9h8M8 13h5"/></>,
   close: <><path d="m6 6 12 12"/><path d="m18 6-12 12"/></>,

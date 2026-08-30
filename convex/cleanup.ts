@@ -11,6 +11,8 @@ async function deleteByUserIndex(
   ctx: MutationCtx,
   table:
     | "accounts"
+    | "assets"
+    | "liabilities"
     | "budgetItems"
     | "income"
     | "userSettings"
@@ -31,6 +33,8 @@ async function deleteGuestUser(ctx: MutationCtx, userId: Id<"users">) {
   // Keep deleting app data until the per-user sets are empty.
   while (await deleteByUserIndex(ctx, "budgetItems", userId)) {}
   while (await deleteByUserIndex(ctx, "accounts", userId)) {}
+  while (await deleteByUserIndex(ctx, "assets", userId)) {}
+  while (await deleteByUserIndex(ctx, "liabilities", userId)) {}
   while (await deleteByUserIndex(ctx, "income", userId)) {}
   while (await deleteByUserIndex(ctx, "userSettings", userId)) {}
   while (await deleteByUserIndex(ctx, "feedback", userId)) {}

@@ -75,7 +75,7 @@ function Content({
   return (
     <div className="app-container">
       <Authenticated>
-        <BudgetPlanner activeTab={activeTab} onTabChange={onTabChange} />
+        <BudgetPlanner activeTab={activeTab} onTabChange={onTabChange} isGuest={loggedInUser?.isAnonymous === true} />
       </Authenticated>
       <Unauthenticated>
         <div className="auth-layout">

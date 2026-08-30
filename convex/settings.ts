@@ -1,9 +1,10 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const getUserSettings = query({
   args: {},
+  returns: v.union(v.null(), v.object({ currency: v.string() })),
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
@@ -13,16 +14,16 @@ export const getUserSettings = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .unique();
 
-    return settings ?? { currency: "GBP" };
+    return { currency: settings?.currency ?? "GBP" };
   },
 });
 
 export const updateCurrency = mutation({
   args: { currency: v.string() },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-
     const existing = await ctx.db
       .query("userSettings")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -33,17 +34,20 @@ export const updateCurrency = mutation({
     } else {
       await ctx.db.insert("userSettings", { userId, currency: args.currency });
     }
+    return null;
   },
 });
 
 export const updateEmail = mutation({
   args: { email: v.string() },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
     const user = await ctx.db.get(userId);
     if (!user) throw new Error("User not found");
+    if (user.isAnonymous) throw new ConvexError("Create an account before changing sign-in details.");
 
     // Check if email is already taken
     const existing = await ctx.db
@@ -56,5 +60,6 @@ export const updateEmail = mutation({
     }
 
     await ctx.db.patch(userId, { email: args.email });
+    return null;
   },
 });

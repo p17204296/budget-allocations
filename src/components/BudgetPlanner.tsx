@@ -16,7 +16,7 @@ export type TabId = "overview" | "allocations" | "accounts" | "income" | "settin
 const primaryTabs: { id: TabId; label: string; icon: IconName }[] = [
   { id: "overview", label: "Overview", icon: "overview" },
   { id: "allocations", label: "Plan", icon: "allocations" },
-  { id: "accounts", label: "Accounts", icon: "accounts" },
+  { id: "accounts", label: "Money", icon: "accounts" },
   { id: "income", label: "Income", icon: "income" },
   { id: "settings", label: "Settings", icon: "settings" },
 ];
@@ -24,9 +24,10 @@ const primaryTabs: { id: TabId; label: string; icon: IconName }[] = [
 type BudgetPlannerProps = {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
+  isGuest: boolean;
 };
 
-export function BudgetPlanner({ activeTab, onTabChange }: BudgetPlannerProps) {
+export function BudgetPlanner({ activeTab, onTabChange, isGuest }: BudgetPlannerProps) {
   const accountsQuery = useQuery(api.budget.getAccounts);
   const budgetItemsQuery = useQuery(api.budget.getBudgetItems);
   const incomeQuery = useQuery(api.budget.getIncome);
@@ -75,6 +76,7 @@ export function BudgetPlanner({ activeTab, onTabChange }: BudgetPlannerProps) {
       </nav>
 
       <div className="planner-content" key={activeTab}>
+        {isGuest ? <div className="guest-demo-banner"><span><Icon name="shield" /></span><div><strong>Your seven-day guest workspace</strong><p>Try every feature with your own figures. Create an account if you want to keep them beyond seven days.</p></div></div> : null}
         {activeTab === "overview" ? (
           <div className="overview-layout">
             <SummaryDashboard totalIncome={totalIncome} totalEssentials={totalEssentials} totalSavings={totalSavings} totalOutgoings={totalOutgoings} netTotal={netTotal} currency={currency} />
@@ -91,9 +93,9 @@ export function BudgetPlanner({ activeTab, onTabChange }: BudgetPlannerProps) {
           </div>
         ) : null}
         {activeTab === "allocations" ? <AccountAllocations accounts={accounts} budgetItems={budgetItems} currency={currency} /> : null}
-        {activeTab === "accounts" ? <AccountManager accounts={accounts} currency={currency} /> : null}
+        {activeTab === "accounts" ? <AccountManager currency={currency} /> : null}
         {activeTab === "income" ? <IncomeManager income={income} currency={currency} /> : null}
-        {activeTab === "settings" ? <SettingsPage /> : null}
+        {activeTab === "settings" ? <SettingsPage isGuest={isGuest} /> : null}
         {activeTab === "admin" && adminAccess?.isAdmin ? <AdminPage passwordResetEnabled={adminAccess.passwordResetEnabled} /> : null}
       </div>
 

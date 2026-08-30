@@ -10,7 +10,7 @@ function errorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
 }
 
-export function SettingsPage() {
+export function SettingsPage({ isGuest }: { isGuest: boolean }) {
   const settings = useQuery(api.settings.getUserSettings);
   const user = useQuery(api.auth.loggedInUser);
   const updateCurrency = useMutation(api.settings.updateCurrency);
@@ -57,10 +57,10 @@ export function SettingsPage() {
     <div className="page-stack settings-page">
       <PageHeader eyebrow="Make it yours" title="Settings" description="Choose how your budget is displayed and keep your account details up to date." />
       <Card className="settings-card"><div className="settings-intro"><span><Icon name="currency" /></span><div><h2>Display currency</h2><p>Used for every amount across your budget.</p></div></div><div className="settings-body"><div className="currency-grid">{CURRENCIES.map((currency) => <button type="button" key={currency.code} onClick={() => setSelectedCurrency(currency.code)} className={activeCurrency === currency.code ? "active" : ""} aria-pressed={activeCurrency === currency.code}><strong>{currency.symbol}</strong><span><b>{currency.code}</b><small>{currency.name}</small></span></button>)}</div>{selectedCurrency && selectedCurrency !== settings?.currency ? <div className="form-actions"><button type="button" className="btn-primary" onClick={() => void saveCurrency()} disabled={currencySaving}>{currencySaving ? "Saving…" : "Save currency"}</button><button type="button" className="btn-secondary" onClick={() => setSelectedCurrency(null)}>Cancel</button></div> : null}</div></Card>
-      <div className="settings-grid">
+      {!isGuest ? <div className="settings-grid">
         <Card className="settings-card"><div className="settings-intro"><span><Icon name="mail" /></span><div><h2>Email address</h2><p>{user?.email ? `Currently ${user.email}` : "Update your sign-in email."}</p></div></div><form className="settings-body settings-form" onSubmit={saveEmail}><label><span>New email address</span><input type="email" className="form-input" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="you@example.com" required /></label><button type="submit" className="btn-primary" disabled={emailSaving || !newEmail}>{emailSaving ? "Updating…" : "Update email"}</button></form></Card>
         <Card className="settings-card"><div className="settings-intro"><span><Icon name="lock" /></span><div><h2>Change password</h2><p>Use at least 8 characters.</p></div></div><form className="settings-body settings-form" onSubmit={savePassword}><label><span>Current password</span><input type="password" className="form-input" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required /></label><label><span>New password</span><input type="password" className="form-input" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required /></label><label><span>Confirm new password</span><input type="password" className="form-input" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required /></label><button type="submit" className="btn-primary" disabled={passwordSaving || !currentPassword || !newPassword || !confirmPassword}>{passwordSaving ? "Updating…" : "Update password"}</button></form></Card>
-      </div>
+      </div> : <Card><div className="guest-settings-note"><Icon name="shield" /><div><h2>Temporary guest account</h2><p>Your budget and currency choices are fully editable for seven days. Create an account when you want permanent sign-in details.</p></div></div></Card>}
     </div>
   );
 }
