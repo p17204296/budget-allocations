@@ -1,5 +1,7 @@
 # Documentation
 
+**[Overview](../README.md)** | **[Changelog](../CHANGELOG.md)** | **[Documentation](./README.md)** | **[User guides](#user-guides)** | **[Plans](#implementation-plans)**
+
 Start with the user guides for help using Budget Allocations. Implementation plans describe feature decisions, technical scope and verification.
 
 ## User guides

@@ -1,4 +1,7 @@
 # Budget Allocations
+
+**[Overview](./README.md)** | **[Changelog](./CHANGELOG.md)** | **[Documentation](./docs/README.md)** | **[User guides](./docs/README.md#user-guides)** | **[Plans](./docs/README.md#implementation-plans)**
+
 A calm, practical budgeting app for planning monthly spending, assigning money to accounts, and keeping a clear view of your wider financial position.
 
 **[Try Budget Allocations free →](https://budget-allocations.vercel.app/)**
@@ -15,20 +18,6 @@ A calm, practical budgeting app for planning monthly spending, assigning money t
 - Choose the currency used throughout the app.
 - Start with a private seven-day guest workspace or create an account with email and password.
 - Submit feedback from inside the app.
-
-## What-if budgets
-
-The What-if feature is implemented on the feature branch; it has not been deployed to production.
-
-Open **What-if**, choose **New scenario**, then **Copy my budget** or **Start empty**. Enter monthly income after tax and business costs, adjust spending and savings, and set the money you want left each month.
-
-If income is below target, **Income needed to meet your target** lets you choose which source should cover the shortfall. For example, a £5,000 total requirement with £750 from room rental means Primary Income needs £4,250. **Set Primary Income to £4,250** replaces that source's What-if amount; it does not add another £4,250. At or above target, no income change is suggested. You can still manually edit amounts to explore income loss or reduced working hours.
-
-Edits update calculations immediately and autosave **six seconds after your last edit**. Use **Save changes** to save immediately. Successful saves show a toast; incomplete inputs and save failures stay visible. Internal navigation saves valid pending changes before leaving. If another tab changes the scenario, reload its saved version or save your edits separately.
-
-Snapshots keep their original date and currency. Upfront costs are separate from monthly allocations, and scenarios never replace your actual budget. Guest scenarios expire with their seven-day workspace. Info icons explain the calculations on hover, keyboard focus or click.
-
-See the [What-if user guide](./docs/user-guides/what-if-budgets.md) for calculations, save behaviour and limitations. Preserving the current tab and selected scenario on refresh is [planned](./docs/plans/feat-persistent-budget-navigation-plan.md), not yet implemented.
 
 ## Tech stack
 
@@ -108,10 +97,3 @@ public/    Static assets
 ## Documentation
 
 - [Documentation index](./docs/README.md)
-- [Changelog](./CHANGELOG.md)
-- [What-if user guide](./docs/user-guides/what-if-budgets.md)
-- [What-if implementation plan and verification](./docs/plans/feat-what-if-budget-scenarios-plan.md)
-- [Navigation persistence plan](./docs/plans/feat-persistent-budget-navigation-plan.md)
-- [Convex documentation](https://docs.convex.dev/)
-- [Convex Auth documentation](https://labs.convex.dev/auth)
-- [Vite documentation](https://vitejs.dev/)
