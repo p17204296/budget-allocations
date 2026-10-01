@@ -7,6 +7,10 @@ import type { MutationCtx } from "./_generated/server";
 const GUEST_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const ROW_BATCH_SIZE = 100;
 const APPLICATION_TABLES = [
+  "scenarioIncome",
+  "scenarioBudgetItems",
+  "scenarioOneOffCosts",
+  "scenarios",
   "budgetItems",
   "accounts",
   "assets",

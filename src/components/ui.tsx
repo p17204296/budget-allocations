@@ -120,7 +120,7 @@ export function ConfirmDialog({ open, title, description, confirmLabel = "Delete
     try {
       await onConfirm();
     } catch {
-      setError("That item could not be deleted. Please try again.");
+      setError("That action could not be completed. Please try again.");
     } finally {
       setIsPending(false);
     }
@@ -136,7 +136,7 @@ export function ConfirmDialog({ open, title, description, confirmLabel = "Delete
         {error ? <p className="confirm-dialog-error" role="alert">{error}</p> : null}
         <div className="confirm-dialog-actions">
           <button type="button" className="btn-secondary" onClick={onCancel} disabled={isPending} autoFocus>Cancel</button>
-          <button type="button" className="btn-danger" onClick={() => void confirm()} disabled={isPending}>{isPending ? "Deleting…" : confirmLabel}</button>
+          <button type="button" className="btn-danger" onClick={() => void confirm()} disabled={isPending}>{isPending ? (confirmLabel === "Delete" ? "Deleting…" : "Working…") : confirmLabel}</button>
         </div>
       </div>
     </dialog>

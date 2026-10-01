@@ -1,8 +1,16 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { scenarioFields, rowValidator, oneOffValidator } from "./scenarioValidators";
 import { authTables } from "@convex-dev/auth/server";
 
 const applicationTables = {
+  scenarios: defineTable(scenarioFields).index("by_user", ["userId"]).index("by_user_and_updatedAt", ["userId", "updatedAt"]),
+  scenarioIncome: defineTable({ userId: v.id("users"), scenarioId: v.id("scenarios"), ...rowValidator.fields })
+    .index("by_user", ["userId"]).index("by_scenario", ["scenarioId"]),
+  scenarioBudgetItems: defineTable({ userId: v.id("users"), scenarioId: v.id("scenarios"), ...rowValidator.fields })
+    .index("by_user", ["userId"]).index("by_scenario", ["scenarioId"]),
+  scenarioOneOffCosts: defineTable({ userId: v.id("users"), scenarioId: v.id("scenarios"), ...oneOffValidator.fields })
+    .index("by_user", ["userId"]).index("by_scenario", ["scenarioId"]),
   accounts: defineTable({
     userId: v.id("users"),
     name: v.string(),
@@ -69,6 +77,7 @@ const applicationTables = {
     message: v.string(),
     page: v.union(
       v.literal("overview"),
+      v.literal("whatif"),
       v.literal("allocations"),
       v.literal("accounts"),
       v.literal("income"),

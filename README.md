@@ -1,4 +1,7 @@
 # Budget Allocations
+
+**[Overview](./README.md)** | **[Changelog](./CHANGELOG.md)** | **[Documentation](./docs/README.md)** | **[User guides](./docs/README.md#user-guides)** | **[Plans](./docs/README.md#implementation-plans)**
+
 A calm, practical budgeting app for planning monthly spending, assigning money to accounts, and keeping a clear view of your wider financial position.
 
 **[Try Budget Allocations free →](https://budget-allocations.vercel.app/)**
@@ -6,6 +9,9 @@ A calm, practical budgeting app for planning monthly spending, assigning money t
 ## What you can do
 
 - Build a monthly plan from income, essential expenses, and savings goals.
+- Explore saved what-if budgets for moves, contracts, rental income, side hustles, or changes in spending.
+- Compare a dated budget snapshot with projected income, spending, savings, and upfront costs.
+- Work out total income needed or the contribution required from one income source.
 - Assign budget items to current or savings accounts and view the resulting transfer plan.
 - Track account balances, property, investments, pensions, and other assets.
 - Record debts and see net worth calculated from your latest manual figures.
@@ -72,6 +78,8 @@ Convex also needs the deployment variables used by the Vite client, including `V
 
 ```bash
 npm run dev    # Start Vite and Convex in watch mode
+npm test       # Run calculations, autosave, UI, and backend tests
+npm run typecheck # Check frontend and backend TypeScript
 npm run build  # Create a production frontend build
 npm run lint   # Type-check, validate Convex, and build
 ```
@@ -88,7 +96,4 @@ public/    Static assets
 
 ## Documentation
 
-- [Changelog](./CHANGELOG.md)
-- [Convex documentation](https://docs.convex.dev/)
-- [Convex Auth documentation](https://labs.convex.dev/auth)
-- [Vite documentation](https://vitejs.dev/)
+- [Documentation index](./docs/README.md)

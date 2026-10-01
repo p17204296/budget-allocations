@@ -18,6 +18,8 @@ import type * as feedback from "../feedback.js";
 import type * as http from "../http.js";
 import type * as lib_admin from "../lib/admin.js";
 import type * as router from "../router.js";
+import type * as scenarioValidators from "../scenarioValidators.js";
+import type * as scenarios from "../scenarios.js";
 import type * as settings from "../settings.js";
 
 import type {
@@ -37,6 +39,8 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "lib/admin": typeof lib_admin;
   router: typeof router;
+  scenarioValidators: typeof scenarioValidators;
+  scenarios: typeof scenarios;
   settings: typeof settings;
 }>;
 
