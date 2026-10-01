@@ -25,7 +25,7 @@ The main questions are:
 - Show baseline and projected figures side by side, with differences for each item and for totals.
 - Allow a nonnegative monthly breathing-room target, initially the greater of zero and the baseline amount left over. If the baseline is in deficit, show the deficit explicitly rather than treating it as comfort.
 - Calculate total income required and the shortfall or surplus against that target.
-- Optionally select one income source to solve for its required contribution while holding all other projected income fixed. An explicit `Use this amount` action updates that source in the scenario only.
+- Optionally select one income source to solve for its required contribution while holding all other projected income fixed. When total income is below target, an explicit `Set [source] to [amount]` action increases that source in the scenario only. At or above target, show that no increase is needed and offer no income-reduction action.
 - Record named one-off costs separately and show their total as an upfront cash requirement.
 - Support empty budgets, multiple income sources, existing currencies, signed-in users and temporary guest workspaces.
 - Label saved scenarios with their snapshot date and currency. Later live-budget changes do not change the baseline.
@@ -67,7 +67,7 @@ Then:
 
 Keep `Within budget` separate from `Meets your target`. A scenario can cover allocations while falling short of the user's breathing-room goal. Describe the result as meeting a user-defined target, not a financial recommendation.
 
-The selected-source result replaces that source's amount; it is not an additional amount to add to its current contribution. If other sources already cover the target, show zero required and the surplus they provide. Removing the selected source clears the selection.
+The selected-source result replaces that source's amount; it is not an additional amount to add to its current contribution. If total income already meets or exceeds the target, acknowledge the achieved target and preserve the income amounts. Zero requirements remain valid in the pure calculation, but are not offered as an income-reduction action. Removing the selected source clears the selection.
 
 ## User flow and screen outline
 
@@ -90,8 +90,8 @@ Use the save behaviour and visual direction below. Existing baseline rows remain
 
 ## Autosave contract: critical acceptance requirement
 
-- Use a trailing debounce of **6,000 ms after the last user edit**. Each edit cancels and restarts the timer, including name, amounts, selection, removal, restoration and `Use this amount`. No per-keystroke writes or periodic saves during uninterrupted typing.
-- Calculations and comparisons update locally immediately. Display `Unsaved changes` during the debounce, `Saving` during a request, `Saved` only when the latest draft is acknowledged, and an actionable failure or conflict state when needed.
+- Use a trailing debounce of **6,000 ms after the last user edit**. Each edit cancels and restarts the timer, including name, amounts, selection, removal, restoration and `Set [source] to [amount]`. No per-keystroke writes or periodic saves during uninterrupted typing.
+- Calculations and comparisons update locally immediately. Display `Unsaved changes` during the debounce, `Saving` during a request, a success toast only when the latest draft is acknowledged, and an actionable failure or conflict state when needed.
 - Capture a draft version with each request. Allow at most one save in flight per scenario. An acknowledgement for an older draft must never replace newer local edits or mark them saved. Edits during a request start their own six-second quiet period; once both that period and the in-flight request complete, save the latest draft once.
 - Clear stale timers on scenario changes and unmount. Reactive query updates must not trigger saves or overwrite dirty drafts. Do not send unchanged payloads.
 - Internal navigation, switching scenarios and sign-out explicitly flush pending valid edits once before leaving, rather than waiting for the debounce. If the flush fails or a field is invalid, keep the draft and stop navigation with retry/correction guidance. If edits occur during the flush, retain them and do not navigate while they are unsaved.
@@ -146,7 +146,7 @@ Keep implementation in small reviewable commits on this branch. No deployment or
 These are arithmetic fixtures, not estimates of real costs or tax.
 
 - **Relocation:** income £3,800; spending £2,500; savings £700; breathing room £600. Increasing spending by £1,200 makes the required income £5,000 and the gap £1,200.
-- **Spare room:** add £750 income and £150 spending to the same baseline. Available after allocations rises from £600 to £1,200; monthly improvement is £600. With spending now £2,650, selecting the original income source shows a required contribution of £3,200 after accounting for the £750 source.
+- **Spare room:** add £750 income and £150 spending to the same baseline. Available after allocations rises from £600 to £1,200; monthly improvement is £600. With spending now £2,650, the minimum contribution from the original income source is mathematically £3,200 after accounting for the £750 source. Because the existing income is above target, the UI confirms no increase is needed and offers no Set action.
 - **Replacement contract:** edit an existing £3,000 source to £4,000. Total income rises by £1,000, not £4,000.
 - **Side hustle:** receipts of £500 less £100 operating costs and £100 tax reserve leave £300 available. Enter £300 as income; improvement is £300, with no duplicate deduction rows.
 - **Income loss:** remove a source and see the resulting gap without affecting the live budget.
@@ -154,7 +154,7 @@ These are arithmetic fixtures, not estimates of real costs or tax.
 
 Autosave must have deterministic timer tests: repeated keystrokes produce zero writes; 5,999 ms after the last edit produces zero writes; 6,000 ms produces one write containing the latest draft. Also test timer resets, edits during in-flight saves, stale acknowledgements, invalid drafts, navigation flush, failed flush, scenario switching, unmount, deletion, revision conflicts and saving a conflict as a new scenario. Confirm in the browser that typing does not issue per-keystroke save requests.
 
-Also verify: empty scenario creation; Restore preserves the prior projection; `Use this amount` replaces rather than adds income; zero income; no spending; deficit baseline; other income exceeding the target; penny rounding; source/category changes; removed rows; duplicated scenarios; live item/account deletion; live currency changes; invalid/negative/non-finite inputs; over-limit snapshots; guest expiry; cross-user access; stale saves; mobile and keyboard navigation. Signed differences must never be clamped to zero.
+Also verify: empty scenario creation; Restore preserves the prior projection; `Set [source] to [amount]` replaces rather than adds income; zero income; no spending; deficit baseline; other income exceeding the target; penny rounding; source/category changes; removed rows; duplicated scenarios; live item/account deletion; live currency changes; invalid/negative/non-finite inputs; over-limit snapshots; guest expiry; cross-user access; stale saves; mobile and keyboard navigation. Signed differences must never be clamped to zero.
 
 Run `npm run build` and the frontend/backend TypeScript checks. The existing `npm run lint` additionally invokes `convex dev --once`, which can update a configured deployment: use it only against an appropriate development deployment during implementation.
 
@@ -177,7 +177,7 @@ All recommendations across the three interview rounds were accepted, with the ex
 - Budget editing is the main entry point, with required-income calculation inside the scenario.
 - Fixed dated baseline; editable target initially preserving current leftover money.
 - Preserve the app identity and make the comparison visually central.
-- Selected-source calculation and explicit `Use this amount` action.
+- Selected-source calculation and explicit `Set [source] to [amount]` action.
 - Debounced autosave, navigation flush and no silent multi-tab overwrites.
 - Separate one-off costs; no promotion to the live budget in v1.
 - Monthly estimates for variable income; manually duplicate cautious/optimistic scenarios.
@@ -195,15 +195,15 @@ Reviewed the existing schema, planner, monthly summary, budget validation and gu
 - Added desktop/mobile comparison workspace following Anthropic frontend-design, with existing colours and typefaces.
 - Implemented six-second trailing autosave, app-wide navigation and sign-out guards, restored rows, target application and revision conflict recovery.
 - Used integer minor-unit calculations; JPY inputs use whole yen.
-- Added 45 passing Vitest calculation/controller/editor and convex-test backend tests, with transaction limits enabled.
+- Added 52 passing Vitest calculation/controller/editor and convex-test backend tests, with transaction limits enabled.
 - TypeScript checks and production build passed. Functions pushed successfully to the development deployment `oceanic-mockingbird-872`; production was not deployed.
 - Browser verification used a temporary guest workspace: scenario creation and real saves succeeded; rapid edits issued no additional save during a five-second observation, then one after the quiet period. The mobile layout fit a 390-pixel viewport without horizontal overflow or a Vite error overlay.
 
 Desktop layout:
 
 ```text
-Scenario name                         Duplicate / Delete
-Snapshot date                         Save status
+Scenario name                         Save changes / Duplicate / Delete
+Snapshot date                         Pending/error status; saved toast
 Monthly plan | Current | What-if | Change    Required income
 Income sources                              Leftover-money target
 Spending                                    Gap / surplus
@@ -212,7 +212,7 @@ Totals
 Upfront costs (separate)
 ```
 
-Mobile keeps each item's three amounts together, stacks the target below the comparison and retains the existing bottom navigation.
+Mobile gives each item a full-width editable What-if amount, with Current and Change beneath it; the target follows the comparison and the existing bottom navigation remains.
 
 - Reopened the saved scenario in the finished build: the projected rent persisted while live income and remaining balance stayed at £3,000 and £920. Added net spare-room income and applied the selected-source requirement through the real development backend.
 - Fresh-browser verification of the finished build reported zero browser errors. Navigation flushed pending rent changes, reopening showed the saved amount, and the comparison fit a 320-pixel viewport without overflow.
@@ -222,3 +222,15 @@ Mobile keeps each item's three amounts together, stacks the target below the com
 - Added an immediate Save changes action alongside the unchanged six-second debounce. Both use the same controller and one-request limit.
 - Successful latest-draft writes show a toast; initial loads, no-op saves and stale acknowledgements do not. Errors and incomplete input stay visible.
 - Tightened the page heading, grouped scenario selection and creation, and consolidated editor actions. Checked layouts at 320, 390, 768, 1024 and 1440 pixels.
+
+### Final refinements and verification (1 October 2026)
+
+- Income actions only increase the selected source to cover a shortfall. Meeting or exceeding the target removes the Set action and preserves higher income. Users may still model reductions by manually editing income.
+- Shows the required-total minus other-income calculation when below target, with explicit before/after amounts and a confirmation toast on applying the change.
+- Replaced native What-if option menus with Radix Select menus anchored to the field. Checked all three types (scenario selection, allocation category and target income source) open on desktop and mobile, including 320 pixels; keyboard selection and Escape dismissal worked.
+- Compact info icons sit beside calculation labels. Floating explanations open on hover, focus and click without expanding the layout.
+- Browser checks covered a £5,000 total target: £750 other income leaves £4,250 required from Primary Income; £3,800 Primary Income leaves £1,200 required from room rental. Applying either changed only the selected source, and saved values persisted on reopening. Actual live income remained £3,000.
+- Final policy checks covered below-target, exactly-on-target and above-target scenarios: the increase action disappears after meeting the target; higher income is preserved.
+- 52 tests passed, covering calculations, autosave, editor integration and backend isolation. Frontend/backend TypeScript checks and the production frontend build passed. Development-browser checks reported no runtime errors.
+- Build reports an advisory that the main JavaScript chunk exceeds 500 kB after adding the accessible dropdown primitive. Bundle splitting is not part of these UI refinements.
+- Refresh still defaults to Overview and clears local scenario selection; the separate navigation persistence plan remains proposed. No production deployment or PR publication has occurred.

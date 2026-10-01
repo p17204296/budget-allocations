@@ -18,11 +18,17 @@ A calm, practical budgeting app for planning monthly spending, assigning money t
 
 ## What-if budgets
 
-Open **What-if**, then choose **Copy my budget** or **Start empty**. Enter expected monthly income after tax and business costs, adjust allocations, and set the money you want left each month. **Use this amount** applies a calculated income requirement to that scenario only.
+The What-if feature is implemented on the feature branch; it has not been deployed to production.
 
-Edits update calculations immediately and autosave **six seconds after your last edit**. Use **Save changes** to save immediately. Successful saves show a toast; incomplete inputs and save failures stay visible in the editor. Leaving the editor inside the app saves pending valid changes first; incomplete inputs or failed saves keep your edits in place. If another tab changes the scenario, reload its saved version or save your own edits separately.
+Open **What-if**, choose **New scenario**, then **Copy my budget** or **Start empty**. Enter monthly income after tax and business costs, adjust spending and savings, and set the money you want left each month.
 
-Snapshots keep their original date and currency. Upfront costs are separate from monthly allocations, and scenarios never replace your actual budget. Temporary guest scenarios expire with the guest workspace.
+If income is below target, **Income needed to meet your target** lets you choose which source should cover the shortfall. For example, a £5,000 total requirement with £750 from room rental means Primary Income needs £4,250. **Set Primary Income to £4,250** replaces that source's What-if amount; it does not add another £4,250. At or above target, no income change is suggested. You can still manually edit amounts to explore income loss or reduced working hours.
+
+Edits update calculations immediately and autosave **six seconds after your last edit**. Use **Save changes** to save immediately. Successful saves show a toast; incomplete inputs and save failures stay visible. Internal navigation saves valid pending changes before leaving. If another tab changes the scenario, reload its saved version or save your edits separately.
+
+Snapshots keep their original date and currency. Upfront costs are separate from monthly allocations, and scenarios never replace your actual budget. Guest scenarios expire with their seven-day workspace. Info icons explain the calculations on hover, keyboard focus or click.
+
+See the [What-if user guide](./docs/user-guides/what-if-budgets.md) for calculations, save behaviour and limitations. Preserving the current tab and selected scenario on refresh is [planned](./docs/plans/feat-persistent-budget-navigation-plan.md), not yet implemented.
 
 ## Tech stack
 
@@ -101,7 +107,11 @@ public/    Static assets
 
 ## Documentation
 
+- [Documentation index](./docs/README.md)
 - [Changelog](./CHANGELOG.md)
+- [What-if user guide](./docs/user-guides/what-if-budgets.md)
+- [What-if implementation plan and verification](./docs/plans/feat-what-if-budget-scenarios-plan.md)
+- [Navigation persistence plan](./docs/plans/feat-persistent-budget-navigation-plan.md)
 - [Convex documentation](https://docs.convex.dev/)
 - [Convex Auth documentation](https://labs.convex.dev/auth)
 - [Vite documentation](https://vitejs.dev/)
