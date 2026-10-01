@@ -40,7 +40,7 @@ export function SignInForm() {
             if (newPassword.length < 8) { toast.error("Use at least 8 characters for your new password."); return; }
             if (newPassword !== confirmPassword) { toast.error("The passwords don’t match."); return; }
             setSubmitting(true);
-            void signIn("password", { email: resetEmail, code: formData.get("code"), newPassword, flow: "reset-verification" }).catch(() => { toast.error("That code is invalid or has expired. Request a new one and try again."); setSubmitting(false); });
+            void signIn("password", { email: resetEmail, code: formData.get("code")?.toString() ?? "", newPassword, flow: "reset-verification" }).catch(() => { toast.error("That code is invalid or has expired. Request a new one and try again."); setSubmitting(false); });
           }}>
             <input className="auth-input-field auth-code-input" type="text" name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{8}" maxLength={8} placeholder="8-digit code" aria-label="Reset code" required />
             <input className="auth-input-field" type="password" name="newPassword" autoComplete="new-password" minLength={8} placeholder="New password" aria-label="New password" required />

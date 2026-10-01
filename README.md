@@ -6,12 +6,23 @@ A calm, practical budgeting app for planning monthly spending, assigning money t
 ## What you can do
 
 - Build a monthly plan from income, essential expenses, and savings goals.
+- Explore saved what-if budgets for moves, contracts, rental income, side hustles, or changes in spending.
+- Compare a dated budget snapshot with projected income, spending, savings, and upfront costs.
+- Work out total income needed or the contribution required from one income source.
 - Assign budget items to current or savings accounts and view the resulting transfer plan.
 - Track account balances, property, investments, pensions, and other assets.
 - Record debts and see net worth calculated from your latest manual figures.
 - Choose the currency used throughout the app.
 - Start with a private seven-day guest workspace or create an account with email and password.
 - Submit feedback from inside the app.
+
+## What-if budgets
+
+Open **What-if**, then choose **Copy my budget** or **Start empty**. Enter expected monthly income after tax and business costs, adjust allocations, and set the money you want left each month. **Use this amount** applies a calculated income requirement to that scenario only.
+
+Edits update calculations immediately and autosave **six seconds after your last edit**. Use **Save changes** to save immediately. Successful saves show a toast; incomplete inputs and save failures stay visible in the editor. Leaving the editor inside the app saves pending valid changes first; incomplete inputs or failed saves keep your edits in place. If another tab changes the scenario, reload its saved version or save your own edits separately.
+
+Snapshots keep their original date and currency. Upfront costs are separate from monthly allocations, and scenarios never replace your actual budget. Temporary guest scenarios expire with the guest workspace.
 
 ## Tech stack
 
@@ -72,6 +83,8 @@ Convex also needs the deployment variables used by the Vite client, including `V
 
 ```bash
 npm run dev    # Start Vite and Convex in watch mode
+npm test       # Run calculations, autosave, UI, and backend tests
+npm run typecheck # Check frontend and backend TypeScript
 npm run build  # Create a production frontend build
 npm run lint   # Type-check, validate Convex, and build
 ```

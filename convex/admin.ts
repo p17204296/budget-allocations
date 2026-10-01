@@ -25,6 +25,7 @@ export const listFeedback = query({
     message: v.string(),
     page: v.union(
       v.literal("overview"),
+      v.literal("whatif"),
       v.literal("allocations"),
       v.literal("accounts"),
       v.literal("income"),

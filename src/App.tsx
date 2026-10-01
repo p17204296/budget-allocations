@@ -8,6 +8,8 @@ import { BudgetPlanner, type TabId } from "./components/BudgetPlanner";
 import { FeedbackDialog } from "./components/FeedbackDialog";
 import { Icon } from "./components/ui";
 
+import { NavigationGuardProvider, useNavigationGuard } from "./hooks/NavigationGuard";
+
 type ToastPosition = NonNullable<ToasterProps["position"]>;
 
 const MOBILE_TOAST_OFFSET = { top: 80, right: 14, left: 14 };
@@ -51,6 +53,11 @@ function ResponsiveToaster() {
 }
 
 export default function App() {
+  return <NavigationGuardProvider><AppShell /></NavigationGuardProvider>;
+}
+
+function AppShell() {
+  const { navigate } = useNavigationGuard();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
@@ -60,7 +67,7 @@ export default function App() {
         <button
           type="button"
           className="brand-lockup"
-          onClick={() => setActiveTab("overview")}
+          onClick={() => void navigate(() => setActiveTab("overview"))}
           aria-label="Go to overview"
         >
           <img
@@ -79,7 +86,7 @@ export default function App() {
         </Authenticated>
       </header>
       <main className="app-main">
-        <Content activeTab={activeTab} onTabChange={setActiveTab} />
+        <Content activeTab={activeTab} onTabChange={(tab) => { if (tab !== activeTab) void navigate(() => setActiveTab(tab)); }} />
       </main>
       <ResponsiveToaster />
     </div>

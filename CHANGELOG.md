@@ -4,6 +4,22 @@ All notable changes to Budget Allocations are documented here.
 
 This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The version history is currently maintained by feature milestone rather than published package releases.
 
+## [Unreleased] — What-if budgets
+
+### Added
+
+- Independent saved scenarios copied from a dated budget snapshot or started empty.
+- Editable net income sources, spending and savings, with comparisons, removal and restoration.
+- Required-income targets, selected-source calculations and separate upfront costs.
+- Six-second debounced autosave with a manual Save changes button, success toasts, navigation guards, draft preservation and revision conflict recovery.
+- Compact responsive What-if workspace with grouped scenario controls and item-by-item mobile comparisons.
+- Scenario ownership checks, record limits and guest cleanup.
+- Calculation, deterministic autosave, editor integration and Convex backend tests.
+
+### Fixed
+
+- Convert the password-reset form code to a string before passing it to authentication.
+
 ## [2026-08-30] — Financial picture and UX update
 
 ### Added
