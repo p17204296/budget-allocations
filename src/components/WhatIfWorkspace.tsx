@@ -323,6 +323,7 @@ function ScenarioEditor({
   const save = useMutation(api.scenarios.save);
   const duplicate = useMutation(api.scenarios.duplicate);
   const copyConflict = useMutation(api.scenarios.copyConflict);
+  const recoverDeleted = useMutation(api.scenarios.recoverDeleted);
   const remove = useMutation(api.scenarios.remove);
   const { register, navigate, busy: navigating } = useNavigationGuard();
   const [, redraw] = useState(0);
@@ -353,6 +354,9 @@ function ScenarioEditor({
       auto.dispose();
     };
   }, [auto, register]);
+  useEffect(() => {
+    if (deleted) auto.stopSaving();
+  }, [deleted, auto]);
   useEffect(() => {
     auto.receive(editable(detail.draft), detail.scenario.revision);
   }, [detail, auto]);
@@ -405,10 +409,13 @@ function ScenarioEditor({
         setActionError("Complete the names and amounts before saving a copy.");
         return;
       }
-      const newId = await copyConflict({
-        id,
-        draft: { ...local, name: copyName() },
-      });
+      const copy = { id, draft: { ...local, name: copyName() } };
+      const newId = deleted
+        ? await recoverDeleted({
+            ...copy,
+            snapshotAt: detail.scenario.snapshotAt,
+          })
+        : await copyConflict(copy);
       auto.dispose();
       onSelect(newId);
     });
@@ -659,7 +666,7 @@ function ScenarioEditor({
           {statusText}
         </div>
       ) : null}
-      {auto.error ? (
+      {auto.error && !deleted ? (
         <div className="scenario-error" role="alert">
           <p>{auto.error}</p>
           {auto.status === "conflict" ? (
@@ -692,9 +699,25 @@ function ScenarioEditor({
             This scenario was deleted in another tab. Your local edits are still
             here.
           </p>
-          <button className="btn-secondary" onClick={() => setDiscarding(true)}>
-            Discard edits and return
-          </button>
+          <div className="scenario-actions">
+            <button
+              className="btn-primary"
+              disabled={busy || !parsed}
+              onClick={saveSeparately}
+            >
+              Save as a new scenario
+            </button>
+            <button
+              className="btn-secondary"
+              disabled={busy}
+              onClick={() => setDiscarding(true)}
+            >
+              Discard edits and return
+            </button>
+          </div>
+          {!parsed ? (
+            <p>Complete the names and amounts to save a new scenario.</p>
+          ) : null}
         </div>
       ) : null}
       {actionError ? (

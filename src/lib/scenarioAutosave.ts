@@ -12,6 +12,7 @@ export class ScenarioAutosave<T> {
   private savedVersion = 0;
   private deadline = 0;
   private active = true;
+  private savingStopped = false;
   private savedFingerprint: string;
   status: SaveStatus = "saved";
   error = "";
@@ -61,6 +62,7 @@ export class ScenarioAutosave<T> {
   private schedule() {
     if (
       !this.active ||
+      this.savingStopped ||
       !this.pending ||
       this.status === "conflict" ||
       this.status === "error" ||
@@ -77,7 +79,7 @@ export class ScenarioAutosave<T> {
     );
   }
   private persist(): Promise<boolean> {
-    if (!this.active || this.status === "conflict")
+    if (!this.active || this.savingStopped || this.status === "conflict")
       return Promise.resolve(false);
     if (this.flight) return this.flight;
     if (!this.validate(this.draft)) {
@@ -105,7 +107,7 @@ export class ScenarioAutosave<T> {
         const nextRevision = await Promise.resolve().then(() =>
           this.save(sentDraft, revision),
         );
-        if (!this.active) return false;
+        if (!this.active || this.savingStopped) return false;
         this.revision = nextRevision;
         this.savedVersion = sentVersion;
         this.savedFingerprint = this.fingerprint(sentDraft);
@@ -143,7 +145,12 @@ export class ScenarioAutosave<T> {
     })();
     return this.flight;
   }
+  stopSaving() {
+    this.savingStopped = true;
+    this.clearTimer();
+  }
   async flush() {
+    if (this.savingStopped) return false;
     const target = this.version;
     this.clearTimer();
     if (this.flight && !(await this.flight)) return false;

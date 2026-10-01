@@ -42,6 +42,8 @@ Incomplete names or amounts block saving until corrected. Failed saves preserve 
 
 If another tab saves the same scenario first, autosave stops. Reload saved version requires confirmation before discarding your edits. Save as a new scenario preserves your local projection and original baseline separately.
 
+If another tab deletes the scenario, your local draft stays visible and autosave stops. Complete any incomplete inputs, then choose Save as a new scenario to preserve the projection and original snapshot. Discard edits and return requires confirmation.
+
 ## Limits and current boundaries
 
 - Up to 20 scenarios per user; each scenario supports up to 200 income rows, 200 allocation rows and 50 upfront-cost rows. Copies of over-limit budgets are rejected rather than silently truncated.

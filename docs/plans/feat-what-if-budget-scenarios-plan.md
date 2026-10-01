@@ -195,7 +195,7 @@ Reviewed the existing schema, planner, monthly summary, budget validation and gu
 - Added desktop/mobile comparison workspace following Anthropic frontend-design, with existing colours and typefaces.
 - Implemented six-second trailing autosave, app-wide navigation and sign-out guards, restored rows, target application and revision conflict recovery.
 - Used integer minor-unit calculations; JPY inputs use whole yen.
-- Added 52 passing Vitest calculation/controller/editor and convex-test backend tests, with transaction limits enabled.
+- Added 57 passing Vitest calculation/controller/editor and convex-test backend tests, with transaction limits enabled.
 - TypeScript checks and production build passed. Functions pushed successfully to the development deployment `oceanic-mockingbird-872`; production was not deployed.
 - Browser verification used a temporary guest workspace: scenario creation and real saves succeeded; rapid edits issued no additional save during a five-second observation, then one after the quiet period. The mobile layout fit a 390-pixel viewport without horizontal overflow or a Vite error overlay.
 
@@ -231,6 +231,13 @@ Mobile gives each item a full-width editable What-if amount, with Current and Ch
 - Compact info icons sit beside calculation labels. Floating explanations open on hover, focus and click without expanding the layout.
 - Browser checks covered a £5,000 total target: £750 other income leaves £4,250 required from Primary Income; £3,800 Primary Income leaves £1,200 required from room rental. Applying either changed only the selected source, and saved values persisted on reopening. Actual live income remained £3,000.
 - Final policy checks covered below-target, exactly-on-target and above-target scenarios: the increase action disappears after meeting the target; higher income is preserved.
-- 52 tests passed, covering calculations, autosave, editor integration and backend isolation. Frontend/backend TypeScript checks and the production frontend build passed. Development-browser checks reported no runtime errors.
+- 57 tests passed, covering calculations, autosave, editor integration and backend isolation. Frontend/backend TypeScript checks and the production frontend build passed. Development-browser checks reported no runtime errors.
 - Build reports an advisory that the main JavaScript chunk exceeds 500 kB after adding the accessible dropdown primitive. Bundle splitting is not part of these UI refinements.
 - Refresh still defaults to Overview and clears local scenario selection; the separate navigation persistence plan remains proposed. No production deployment or PR publication has occurred.
+
+### PR review fixes
+
+- Accepted remote-deletion recovery: a validated detached-copy mutation preserves the local projection and original snapshot as a new private scenario. Normal saves retain baseline immutability and ownership checks.
+- Accepted unchanged-row write optimization: saves reuse the detail read and patch only changed child rows; the parent revision still advances atomically.
+- Added regression coverage for detached recovery, invalid snapshots, ownership, immutable recovered baselines and child read/write counts. The 57-test suite, TypeScript checks, development backend validation and build passed.
+- Tested remote deletion with two development-browser tabs and recovered a £5,000 projection against a £3,000 baseline. Checked recovery controls on desktop and mobile; no browser errors.

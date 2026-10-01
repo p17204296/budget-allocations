@@ -217,6 +217,33 @@ describe("six-second autosave", () => {
     expect(c.status).not.toBe("saved");
     expect(c.pending).toBe(true);
   });
+  it("stops writes after remote deletion while allowing draft corrections for recovery", async () => {
+    const flight = deferred<number>();
+    const saved = vi.fn();
+    const save = vi.fn(() => flight.promise);
+    const c = new ScenarioAutosave(
+      "original",
+      0,
+      Boolean,
+      save,
+      vi.fn(),
+      JSON.stringify,
+      saved,
+    );
+    c.edit("local");
+    await vi.advanceTimersByTimeAsync(6000);
+    c.stopSaving();
+    c.edit("corrected");
+    flight.resolve(1);
+    await vi.advanceTimersByTimeAsync(12000);
+    expect(c.draft).toBe("corrected");
+    expect(c.pending).toBe(true);
+    expect(saved).not.toHaveBeenCalled();
+    expect(await c.flush()).toBe(false);
+    expect(await c.retry()).toBe(false);
+    expect(save).toHaveBeenCalledTimes(1);
+    c.dispose();
+  });
   it("adopts clean remote updates without writing them back or regressing revisions", () => {
     const save = vi.fn();
     const c = new ScenarioAutosave("old", 2, Boolean, save, vi.fn());

@@ -67,12 +67,13 @@ async function choose(label: string, option: string) {
   );
 }
 async function open() {
-  render(
+  const view = render(
     <NavigationGuardProvider>
       <Host />
     </NavigationGuardProvider>,
   );
   await choose("Saved scenarios", "London (GBP)");
+  return view;
 }
 beforeEach(() => {
   HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -349,6 +350,41 @@ describe("workspace integration", () => {
       ).toBe("3800");
     },
   );
+  it("preserves edits as a detached copy when another tab deletes the scenario", async () => {
+    const view = await open();
+    fireEvent.change(screen.getByLabelText("Contract monthly amount"), {
+      target: { value: "5000" },
+    });
+    const snapshotAt = mock.detail.scenario.snapshotAt;
+    mock.detail = null;
+    view.rerender(
+      <NavigationGuardProvider>
+        <Host />
+      </NavigationGuardProvider>,
+    );
+    await act(async () => vi.advanceTimersByTimeAsync(10000));
+    expect(mock.save).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Retry save" })).toBeNull();
+    await act(async () =>
+      fireEvent.click(
+        screen.getByRole("button", { name: "Save as a new scenario" }),
+      ),
+    );
+    expect(mock.copy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "scenario",
+        snapshotAt,
+        draft: expect.objectContaining({
+          income: [
+            expect.objectContaining({
+              baseline: expect.objectContaining({ amount: 3800 }),
+              projected: expect.objectContaining({ amount: 5000 }),
+            }),
+          ],
+        }),
+      }),
+    );
+  });
   it("offers conflict recovery without discarding the local draft", async () => {
     mock.save.mockRejectedValue({ data: { code: "SCENARIO_CONFLICT" } });
     await open();

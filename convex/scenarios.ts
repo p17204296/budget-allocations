@@ -86,7 +86,7 @@ async function detail(ctx: Ctx, id: Id<"scenarios">) {
     budget: publicRows(data.budget),
     oneOff: data.oneOff.map(({ key, name, amount }) => ({ key, name, amount })),
   };
-  return { scenario, draft };
+  return { scenario, draft, data };
 }
 function name(value: string) {
   const cleaned = value.trim();
@@ -267,7 +267,8 @@ export const get = query({
     if (!scenario) return null;
     if (scenario.userId !== userId)
       throw new ConvexError("Scenario not found.");
-    return detail(ctx, args.id);
+    const { draft } = await detail(ctx, args.id);
+    return { scenario, draft };
   },
 });
 export const create = mutation({
@@ -345,7 +346,7 @@ export const save = mutation({
           "This scenario changed in another tab. Reload it or save your edits separately.",
       });
     const draft = cleanDraft(args.draft, original.draft);
-    const data = await rows(ctx, args.id);
+    const data = original.data;
     // Only update projected data; never accept or rewrite a baseline from the caller.
     for (const [table, incoming, existing] of [
       ["scenarioIncome", draft.income, data.income],
@@ -356,12 +357,16 @@ export const save = mutation({
           await ctx.db.delete(old._id);
       for (const row of incoming) {
         const old = existing.find((item) => item.key === row.key);
-        if (old)
-          await ctx.db.patch(table, old._id, {
-            projected: row.projected,
-            removed: row.removed,
-          });
-        else
+        if (old) {
+          if (
+            !equal(old.projected, row.projected) ||
+            !equal(old.removed, row.removed)
+          )
+            await ctx.db.patch(table, old._id, {
+              projected: row.projected,
+              removed: row.removed,
+            });
+        } else
           await ctx.db.insert(table, {
             userId: original.scenario.userId,
             scenarioId: args.id,
@@ -374,9 +379,10 @@ export const save = mutation({
         await ctx.db.delete(old._id);
     for (const row of draft.oneOff) {
       const old = data.oneOff.find((item) => item.key === row.key);
-      if (old)
-        await ctx.db.patch(old._id, { name: row.name, amount: row.amount });
-      else
+      if (old) {
+        if (old.name !== row.name || old.amount !== row.amount)
+          await ctx.db.patch(old._id, { name: row.name, amount: row.amount });
+      } else
         await ctx.db.insert("scenarioOneOffCosts", {
           userId: original.scenario.userId,
           scenarioId: args.id,
@@ -418,6 +424,62 @@ export const copyConflict = mutation({
       original.scenario.userId,
       draft,
       original.scenario.snapshotAt,
+    );
+  },
+});
+/** Recover a local snapshot as a new private scenario after its source was deleted.
+ * Client baselines are accepted only for this new record, validated, then immutable.
+ */
+export const recoverDeleted = mutation({
+  args: {
+    id: v.id("scenarios"),
+    draft: draftValidator,
+    snapshotAt: v.number(),
+  },
+  returns: v.id("scenarios"),
+  handler: async (ctx, args) => {
+    const userId = await user(ctx);
+    const source = await ctx.db.get(args.id);
+    if (source) {
+      if (source.userId !== userId)
+        throw new ConvexError("Scenario not found.");
+      throw new ConvexError(
+        "This scenario still exists. Use conflict recovery instead.",
+      );
+    }
+    if (
+      !Number.isFinite(args.snapshotAt) ||
+      args.snapshotAt < 0 ||
+      args.snapshotAt > Date.now()
+    )
+      throw new ConvexError("Invalid snapshot date.");
+    if (!/^[A-Z]{3}$/.test(args.draft.currency))
+      throw new ConvexError("Invalid currency.");
+    if (
+      args.draft.income.length > MAX_ROWS ||
+      args.draft.budget.length > MAX_ROWS
+    )
+      throw new ConvexError("A scenario supports up to 200 rows per group.");
+    const original: ScenarioDraft = {
+      ...args.draft,
+      income: args.draft.income.map((row) => ({
+        ...row,
+        baseline: row.baseline
+          ? cleanValue(row.baseline, args.draft.currency, false)
+          : undefined,
+      })),
+      budget: args.draft.budget.map((row) => ({
+        ...row,
+        baseline: row.baseline
+          ? cleanValue(row.baseline, args.draft.currency, true)
+          : undefined,
+      })),
+    };
+    return insert(
+      ctx,
+      userId,
+      cleanDraft(args.draft, original),
+      args.snapshotAt,
     );
   },
 });

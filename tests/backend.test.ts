@@ -1,5 +1,6 @@
 import { convexTest } from "convex-test";
 import { describe, expect, it, vi } from "vitest";
+import { save } from "../convex/scenarios";
 import schema from "../convex/schema";
 import { api, internal } from "../convex/_generated/api";
 const modules = import.meta.glob("../convex/**/*.ts");
@@ -37,6 +38,99 @@ async function setup() {
   return { t, owner, stranger, id, first };
 }
 describe("scenario persistence", () => {
+  it("recovers a deleted local snapshot without recreating its source", async () => {
+    const { owner, id, stranger } = await setup();
+    const original = await owner.query(api.scenarios.get, { id });
+    const draft = structuredClone(original.draft);
+    draft.income[0].projected!.amount = 5000;
+    await owner.mutation(api.scenarios.remove, { id });
+    const copyId = await owner.mutation(api.scenarios.recoverDeleted, {
+      id,
+      draft,
+      snapshotAt: original.scenario.snapshotAt,
+    });
+    expect(copyId).not.toBe(id);
+    expect(await owner.query(api.scenarios.get, { id })).toBeNull();
+    const copy = await owner.query(api.scenarios.get, { id: copyId });
+    expect(copy.scenario.snapshotAt).toBe(original.scenario.snapshotAt);
+    expect(copy.draft.income[0]).toMatchObject({
+      baseline: { amount: 3800 },
+      projected: { amount: 5000 },
+    });
+    await expect(
+      stranger.query(api.scenarios.get, { id: copyId }),
+    ).rejects.toThrow();
+    copy.draft.income[0].baseline!.amount = 1;
+    await expect(
+      owner.mutation(api.scenarios.save, {
+        id: copyId,
+        draft: copy.draft,
+        expectedRevision: 0,
+      }),
+    ).rejects.toThrow("original budget");
+  });
+  it("validates detached recovery and does not bypass ownership or existing baselines", async () => {
+    const { t, owner, stranger, id } = await setup();
+    const original = await owner.query(api.scenarios.get, { id });
+    const args = {
+      id,
+      draft: original.draft,
+      snapshotAt: original.scenario.snapshotAt,
+    };
+    await expect(
+      t.mutation(api.scenarios.recoverDeleted, args),
+    ).rejects.toThrow();
+    await expect(
+      stranger.mutation(api.scenarios.recoverDeleted, args),
+    ).rejects.toThrow("Scenario not found");
+    await expect(
+      owner.mutation(api.scenarios.recoverDeleted, args),
+    ).rejects.toThrow("still exists");
+    await owner.mutation(api.scenarios.remove, { id });
+    const bad = structuredClone(args);
+    bad.draft.income[0].baseline!.amount = -1;
+    await expect(
+      owner.mutation(api.scenarios.recoverDeleted, bad),
+    ).rejects.toThrow("Amounts");
+    await expect(
+      owner.mutation(api.scenarios.recoverDeleted, { ...args, snapshotAt: -1 }),
+    ).rejects.toThrow("snapshot date");
+    const oversized = structuredClone(args);
+    oversized.draft.income = Array.from({ length: 201 }, (_, i) => ({
+      key: String(i),
+      projected: { name: "Income", amount: 1 },
+    }));
+    await expect(
+      owner.mutation(api.scenarios.recoverDeleted, oversized),
+    ).rejects.toThrow("200 rows");
+  });
+  it("patches only changed child documents and reads each child table once", async () => {
+    const { owner, id } = await setup();
+    const { draft } = await owner.query(api.scenarios.get, { id });
+    draft.oneOff.push({ key: "move", name: "Move", amount: 200 });
+    await owner.mutation(api.scenarios.save, {
+      id,
+      draft,
+      expectedRevision: 0,
+    });
+    await owner.run(async (ctx) => {
+      const patch = vi.spyOn(ctx.db, "patch");
+      const query = vi.spyOn(ctx.db, "query");
+      draft.name = "Name only";
+      await save._handler(ctx, { id, draft, expectedRevision: 1 });
+      expect(patch).toHaveBeenCalledTimes(1);
+      expect(query.mock.calls.map((call) => call[0])).toEqual([
+        "scenarioIncome",
+        "scenarioBudgetItems",
+        "scenarioOneOffCosts",
+      ]);
+      patch.mockClear();
+      draft.income[0].projected!.amount = 4500;
+      draft.oneOff[0].amount = 300;
+      await save._handler(ctx, { id, draft, expectedRevision: 2 });
+      expect(patch).toHaveBeenCalledTimes(3); // Income, upfront cost, parent revision.
+    });
+  });
   it("returns a missing scenario safely and cannot save a deleted scenario", async () => {
     const { owner, id } = await setup();
     const detail = await owner.query(api.scenarios.get, { id });

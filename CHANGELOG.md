@@ -27,6 +27,9 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). T
 
 ### Fixed
 
+- Recover local edits as a new scenario after another tab deletes the original; stop autosave and remove the ineffective retry action.
+- Scenario saves reuse a single bounded child-row read and skip patches for unchanged income, allocation and upfront-cost rows.
+
 - Removed suggestions to reduce income when the monthly target is already met or exceeded.
 - Moved the selected-source calculation info icon beside its section label.
 - Corrected detached native option-menu positioning in What-if fields by using anchored dropdown menus.
