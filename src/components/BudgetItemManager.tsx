@@ -1,3 +1,4 @@
+import { SaveForm } from "./SaveForm";
 import { useState } from "react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
@@ -70,12 +71,13 @@ export function BudgetItemManager({ category, items, accounts, currency }: Props
     if (!formData.name || formData.amount === "") return;
     setSaving(true);
     try {
+      if (formData.accountId && !accounts.some(account => account._id === formData.accountId)) throw new Error("Choose an available account before saving.");
       await upsertBudgetItem({
         id: editingId ?? undefined,
         name: formData.name,
         category,
         amount: Number(formData.amount),
-        accountId: formData.accountId ? formData.accountId as Id<"accounts"> : undefined,
+        accountId: accounts.find(account => account._id === formData.accountId)?._id,
         targetAmount: category === "savings" && formData.targetAmount ? Number(formData.targetAmount) : undefined,
         currentSaved: category === "savings" && formData.targetAmount ? Number(formData.currentSaved || 0) : undefined,
         targetDate: category === "savings" && formData.targetAmount && formData.targetDate ? new Date(`${formData.targetDate}T12:00:00`).getTime() : undefined,
@@ -138,12 +140,12 @@ function BudgetItemForm({ category, accounts, symbol, formData, isEditing, savin
 }) {
   const hasTarget = formData.targetAmount !== "";
   return (
-    <form onSubmit={onSubmit} className={`inline-form ${isEditing ? "contextual-editor" : ""}`}>
+    <SaveForm saveTitle={category === "savings" ? "Savings goal" : "Essential expense"} saveLabel={isEditing ? "Save changes" : "Add item"} saving={saving} onSubmit={onSubmit} className={`inline-form ${isEditing ? "contextual-editor" : ""}`}>
       {isEditing ? <div className="inline-form-heading"><span>Editing item</span><strong>{formData.name}</strong></div> : null}
       <div className="form-grid form-grid-name"><label><span>Item name</span><input type="text" placeholder={category === "essentials" ? "e.g. Rent" : "e.g. Emergency fund"} value={formData.name} onChange={(event) => onChange("name", event.target.value)} className="form-input" maxLength={80} required autoFocus={!isEditing} /></label></div>
       <div className="form-grid"><label><span>Monthly amount ({symbol})</span><input type="number" placeholder="0.00" min="0" step="0.01" value={formData.amount} onChange={(event) => onChange("amount", event.target.value)} className="form-input" required /></label><label><span>Paid from</span><select value={formData.accountId} onChange={(event) => onChange("accountId", event.target.value)} className="form-input"><option value="">No account yet</option>{accounts.map((account) => <option key={account._id} value={account._id}>{account.name}</option>)}</select></label></div>
       {category === "savings" ? <fieldset className="goal-fields"><legend><Icon name="target" /><span>Goal details <small>optional</small></span></legend><div className="form-grid"><label><span>Target amount ({symbol})</span><input type="number" placeholder="e.g. 10000" min="0.01" step="0.01" value={formData.targetAmount} onChange={(event) => onChange("targetAmount", event.target.value)} className="form-input" /></label><label><span>Already saved ({symbol})</span><input type="number" placeholder="0.00" min="0" step="0.01" value={formData.currentSaved} onChange={(event) => onChange("currentSaved", event.target.value)} className="form-input" disabled={!hasTarget} /></label></div><div className="form-grid form-grid-name"><label><span>Target date</span><input type="date" value={formData.targetDate} onChange={(event) => onChange("targetDate", event.target.value)} className="form-input" disabled={!hasTarget} /></label></div></fieldset> : null}
       <div className="form-actions"><button type="submit" className="btn-primary" disabled={saving}>{saving ? "Saving…" : isEditing ? "Save changes" : "Add item"}</button><button type="button" onClick={onCancel} className="btn-secondary" disabled={saving}>Cancel</button></div>
-    </form>
+    </SaveForm>
   );
 }

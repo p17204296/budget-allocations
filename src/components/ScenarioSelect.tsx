@@ -9,22 +9,30 @@ type Props = {
   "aria-label"?: string;
   "aria-describedby"?: string;
   onChange: (event: { target: { value: string } }) => void;
-  children: ReactNode;
+  children?: ReactNode;
+  options?: { value: string; label: ReactNode }[];
 };
 // Existing option markup is shared between the trigger text and option list.
 export function ScenarioSelect({
   children,
+  options: suppliedOptions,
   value,
   onChange,
   disabled,
   className = "",
   ...labelProps
 }: Props) {
-  const options = Children.toArray(children)
-    .filter(isValidElement)
-    .map((child) => {
-      const props = child.props as { value: string; children: ReactNode };
-      return { value: props.value || "__none__", label: props.children };
+  const options =
+    suppliedOptions ??
+    Children.toArray(children).flatMap((child) => {
+      if (
+        !isValidElement<{ value?: unknown; children?: ReactNode }>(child) ||
+        typeof child.props.value !== "string"
+      )
+        return [];
+      return [
+        { value: child.props.value || "__none__", label: child.props.children },
+      ];
     });
   return (
     <Select.Root

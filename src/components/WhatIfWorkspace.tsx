@@ -1,7 +1,9 @@
+import { useFloatingSave } from "./FloatingSave";
+import { SaveForm } from "./SaveForm";
 import { ScenarioSelect } from "./ScenarioSelect";
-import { createPortal } from "react-dom";
+import { CalculationHelp } from "./CalculationHelp";
 import { toast } from "sonner";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   useConvex,
   useMutation,
@@ -86,7 +88,7 @@ export function WhatIfWorkspace() {
           value={selected ?? ""}
           disabled={busy}
           onChange={(event) => {
-            const id = event.target.value as Id<"scenarios">;
+            const id = results.find(item => item._id === event.target.value)?._id ?? null;
             void navigate(() => {
               setSelected(id || null);
               setCreating(false);
@@ -111,7 +113,7 @@ export function WhatIfWorkspace() {
         ) : null}
       </div>
       {creating ? (
-        <form
+        <SaveForm saveTitle="New monthly scenario" saveLabel="Create scenario" saving={busy}
           className="surface scenario-create"
           onSubmit={(event) => void handleCreate(event)}
         >
@@ -166,7 +168,7 @@ export function WhatIfWorkspace() {
               {busy ? "Creating…" : "Create scenario"}
             </button>
           </div>
-        </form>
+        </SaveForm>
       ) : selected ? (
         <ScenarioLoader key={selected} id={selected} onSelect={setSelected} />
       ) : (
@@ -216,95 +218,6 @@ function ScenarioLoader({
       deleted={detail === null}
       onSelect={onSelect}
     />
-  );
-}
-function CalculationHelp({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  const id = useId();
-  const trigger = useRef<HTMLButtonElement>(null);
-  const popup = useRef<HTMLDivElement>(null);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const [open, setOpen] = useState(false);
-  const [position, setPosition] = useState({ top: 0, left: 0, width: 280 });
-  const show = () => {
-    clearTimeout(timer.current);
-    const rect = trigger.current!.getBoundingClientRect();
-    const width = Math.min(280, window.innerWidth - 24);
-    setPosition({
-      width,
-      left: Math.max(12, Math.min(rect.left, window.innerWidth - width - 12)),
-      top: Math.min(rect.bottom + 8, window.innerHeight - 180),
-    });
-    setOpen(true);
-  };
-  const hideSoon = () => {
-    timer.current = setTimeout(() => setOpen(false), 150);
-  };
-  useEffect(() => {
-    if (!open) return;
-    const dismiss = (event: PointerEvent) => {
-      if (
-        !trigger.current?.contains(event.target as Node) &&
-        !popup.current?.contains(event.target as Node)
-      )
-        setOpen(false);
-    };
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        clearTimeout(timer.current);
-        setOpen(false);
-      }
-    };
-    const close = () => setOpen(false);
-    document.addEventListener("pointerdown", dismiss);
-    document.addEventListener("keydown", escape);
-    window.addEventListener("scroll", close, true);
-    window.addEventListener("resize", close);
-    return () => {
-      document.removeEventListener("pointerdown", dismiss);
-      document.removeEventListener("keydown", escape);
-      window.removeEventListener("scroll", close, true);
-      window.removeEventListener("resize", close);
-      clearTimeout(timer.current);
-    };
-  }, [open]);
-  return (
-    <span className="scenario-calculation-help">
-      <button
-        ref={trigger}
-        type="button"
-        aria-label={`How ${label} is calculated`}
-        aria-describedby={open ? id : undefined}
-        aria-expanded={open}
-        onMouseEnter={show}
-        onMouseLeave={hideSoon}
-        onFocus={show}
-        onBlur={() => setOpen(false)}
-        onClick={show}
-      >
-        <span aria-hidden="true">i</span>
-      </button>
-      {open &&
-        createPortal(
-          <div
-            ref={popup}
-            id={id}
-            role="tooltip"
-            className="scenario-calculation-tooltip"
-            style={position}
-            onMouseEnter={() => clearTimeout(timer.current)}
-            onMouseLeave={hideSoon}
-          >
-            {children}
-          </div>,
-          document.body,
-        )}
-    </span>
   );
 }
 
@@ -596,6 +509,22 @@ function ScenarioEditor({
       </div>
     );
   };
+  const editor = useRef<HTMLElement>(null);
+  useFloatingSave({
+    visible: auto.pending || deleted,
+    title: "Monthly what-if",
+    status: deleted ? "conflict" : auto.status === "saved" ? "dirty" : auto.status,
+    actionLabel: deleted || auto.status === "conflict" ? "Review changes" : !parsed ? "Check fields" : auto.status === "error" ? "Retry save" : "Save now",
+    disabled: busy || navigating || deleting || reloading,
+    onSave: () => {
+      if (deleted) setDiscarding(true);
+      else if (auto.status === "conflict") setReloading(true);
+      else if (!parsed) {
+        const invalid = editor.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
+        invalid?.focus(); invalid?.scrollIntoView({ block: "center" });
+      } else void auto.flush();
+    },
+  });
   const statusText = {
     saved: "",
     dirty: "Unsaved changes",
@@ -605,7 +534,7 @@ function ScenarioEditor({
     conflict: "Changes in another tab",
   }[auto.status];
   return (
-    <section className="scenario-editor" key={generation}>
+    <section className="scenario-editor" ref={editor} key={generation}>
       <div className="scenario-editor-header">
         <div>
           <label htmlFor="scenario-name">Scenario name</label>

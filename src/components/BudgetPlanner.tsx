@@ -11,7 +11,7 @@ import { AdminPage } from "./AdminPage";
 import { Card, Icon, type IconName, SectionTitle } from "./ui";
 import { getCurrencySymbol } from "../lib/currency";
 
-import { WhatIfWorkspace } from "./WhatIfWorkspace";
+import { PlanningWorkspace } from "./PlanningWorkspace";
 
 export type TabId = "overview" | "whatif" | "allocations" | "accounts" | "income" | "settings" | "admin";
 
@@ -20,7 +20,7 @@ const primaryTabs: { id: TabId; label: string; icon: IconName }[] = [
   { id: "allocations", label: "Plan", icon: "allocations" },
   { id: "accounts", label: "Money", icon: "accounts" },
   { id: "income", label: "Income", icon: "income" },
-  { id: "whatif", label: "What-if", icon: "spark" },
+  { id: "whatif", label: "Planning", icon: "spark" },
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
@@ -169,7 +169,7 @@ export function BudgetPlanner({ activeTab, onTabChange, isGuest }: BudgetPlanner
         {activeTab === "allocations" ? <AccountAllocations accounts={accounts} budgetItems={budgetItems} currency={currency} /> : null}
         {activeTab === "accounts" ? <AccountManager currency={currency} /> : null}
         {activeTab === "income" ? <IncomeManager income={income} currency={currency} /> : null}
-        {activeTab === "whatif" ? <WhatIfWorkspace /> : null}
+        {activeTab === "whatif" ? <PlanningWorkspace /> : null}
         {activeTab === "settings" ? <SettingsPage isGuest={isGuest} /> : null}
         {activeTab === "admin" && adminAccess?.isAdmin ? <AdminPage passwordResetEnabled={adminAccess.passwordResetEnabled} /> : null}
       </div>
