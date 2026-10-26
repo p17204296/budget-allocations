@@ -49,9 +49,10 @@ function ResponsiveToaster() {
     };
   }, []);
 
-  const offset = position === "bottom-right" ? DESKTOP_TOAST_OFFSET : TABLET_TOAST_OFFSET;
+  const effectivePosition = savePromptVisible && position === "bottom-right" ? "top-right" : position;
+  const offset = effectivePosition === "bottom-right" ? DESKTOP_TOAST_OFFSET : TABLET_TOAST_OFFSET;
 
-  return <Toaster position={savePromptVisible && position === "bottom-right" ? "top-right" : position} offset={offset} mobileOffset={MOBILE_TOAST_OFFSET} toastOptions={APP_TOAST_OPTIONS} />;
+  return <Toaster position={effectivePosition} offset={offset} mobileOffset={MOBILE_TOAST_OFFSET} toastOptions={APP_TOAST_OPTIONS} />;
 }
 
 export default function App() {
