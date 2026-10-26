@@ -14,6 +14,8 @@ import type * as auth from "../auth.js";
 import type * as budget from "../budget.js";
 import type * as cleanup from "../cleanup.js";
 import type * as crons from "../crons.js";
+import type * as eventValidators from "../eventValidators.js";
+import type * as events from "../events.js";
 import type * as feedback from "../feedback.js";
 import type * as http from "../http.js";
 import type * as lib_admin from "../lib/admin.js";
@@ -35,6 +37,8 @@ declare const fullApi: ApiFromModules<{
   budget: typeof budget;
   cleanup: typeof cleanup;
   crons: typeof crons;
+  eventValidators: typeof eventValidators;
+  events: typeof events;
   feedback: typeof feedback;
   http: typeof http;
   "lib/admin": typeof lib_admin;

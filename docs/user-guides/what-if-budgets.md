@@ -2,9 +2,11 @@
 
 What-if budgets let you explore a move, a new contract, spare-room income, a side hustle, income loss or different spending. Each scenario is separate from your actual budget.
 
+One-off occasions have their own [event planner](event-planning.md) under Planning → Events.
+
 ## Create and compare
 
-Open What-if and select New scenario. Copy my budget preserves a dated snapshot of your income, spending and savings. Start empty creates a blank baseline. Give the scenario a name, then edit its What-if amounts. All figures are monthly and use the scenario's currency.
+Open Planning → Monthly what-if and select New scenario. Copy my budget preserves a dated snapshot of your income, spending and savings. Start empty creates a blank baseline. Give the scenario a name, then edit its What-if amounts. All figures are monthly and use the scenario's currency.
 
 Income should be the money available after tax and business costs. Do not deduct those costs again in scenario spending. Savings are monthly allocations, not account balances. Upfront costs, such as moving or setup costs, are recorded separately.
 
@@ -35,6 +37,8 @@ Set Primary Income to £4,250 replaces its What-if monthly amount with £4,250; 
 At or above target, the app confirms no increase is needed and offers no Set button. It does not suggest lowering your income. To explore reduced hours or income loss, manually edit or remove a source.
 
 ## Save and recover
+
+A [floating save prompt](saving-changes.md) appears after edits and stays available while you scroll. **Save now** saves immediately; the inline save button remains available too.
 
 Calculations change immediately. Autosave waits six seconds after the last edit; every edit restarts the timer. Save changes saves valid edits immediately through the same controller. A successful save shows a toast. An older response cannot mark newer edits as saved.
 

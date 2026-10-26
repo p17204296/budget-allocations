@@ -1,9 +1,12 @@
+import { eventFields, eventItemFields } from "./eventValidators";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { scenarioFields, rowValidator, oneOffValidator } from "./scenarioValidators";
 import { authTables } from "@convex-dev/auth/server";
 
 const applicationTables = {
+  events: defineTable({ ...eventFields, userId: v.id("users"), revision: v.number(), updatedAt: v.number() }).index("by_user", ["userId"]),
+  eventItems: defineTable({ ...eventItemFields, userId: v.id("users"), eventId: v.id("events"), position: v.number() }).index("by_user", ["userId"]).index("by_event", ["eventId"]),
   scenarios: defineTable(scenarioFields).index("by_user", ["userId"]).index("by_user_and_updatedAt", ["userId", "updatedAt"]),
   scenarioIncome: defineTable({ userId: v.id("users"), scenarioId: v.id("scenarios"), ...rowValidator.fields })
     .index("by_user", ["userId"]).index("by_scenario", ["scenarioId"]),

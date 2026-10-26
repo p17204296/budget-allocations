@@ -1,3 +1,4 @@
+import { FloatingSaveProvider, useSavePromptVisible } from "./components/FloatingSave";
 import { useEffect, useState } from "react";
 import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
@@ -32,6 +33,7 @@ function getToastPosition(): ToastPosition {
 }
 
 function ResponsiveToaster() {
+  const savePromptVisible = useSavePromptVisible();
   const [position, setPosition] = useState<ToastPosition>(getToastPosition);
 
   useEffect(() => {
@@ -49,11 +51,11 @@ function ResponsiveToaster() {
 
   const offset = position === "bottom-right" ? DESKTOP_TOAST_OFFSET : TABLET_TOAST_OFFSET;
 
-  return <Toaster position={position} offset={offset} mobileOffset={MOBILE_TOAST_OFFSET} toastOptions={APP_TOAST_OPTIONS} />;
+  return <Toaster position={savePromptVisible && position === "bottom-right" ? "top-right" : position} offset={offset} mobileOffset={MOBILE_TOAST_OFFSET} toastOptions={APP_TOAST_OPTIONS} />;
 }
 
 export default function App() {
-  return <NavigationGuardProvider><AppShell /></NavigationGuardProvider>;
+  return <FloatingSaveProvider><NavigationGuardProvider><AppShell /></NavigationGuardProvider></FloatingSaveProvider>;
 }
 
 function AppShell() {
@@ -112,7 +114,7 @@ function Content({
   }
 
   return (
-    <div className="app-container">
+    <div className={`app-container${activeTab === "whatif" ? " planning-container" : ""}`}>
       <Authenticated>
         <BudgetPlanner activeTab={activeTab} onTabChange={onTabChange} isGuest={loggedInUser?.isAnonymous === true} />
       </Authenticated>

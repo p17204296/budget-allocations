@@ -129,10 +129,15 @@ export class ScenarioAutosave<T> {
           typeof data === "object" &&
           data !== null &&
           "code" in data &&
-          data.code === "SCENARIO_CONFLICT";
+          (data.code === "SCENARIO_CONFLICT" || data.code === "EVENT_CONFLICT");
         this.status = conflict ? "conflict" : "error";
         this.error = conflict
-          ? "This scenario changed in another tab. Reload it or save your edits separately."
+          ? typeof data === "object" &&
+            data !== null &&
+            "message" in data &&
+            typeof data.message === "string"
+            ? data.message
+            : "This scenario changed in another tab. Reload it or save your edits separately."
           : "Changes could not be saved. Your edits are still here. Retry when your connection is available.";
         return false;
       } finally {
