@@ -2,7 +2,12 @@ import { convexTest } from "convex-test";
 import { describe, expect, it, vi } from "vitest";
 import schema from "../convex/schema";
 import { api, internal } from "../convex/_generated/api";
-import { MAX_EVENTS, MAX_EVENT_ITEMS } from "../shared/events";
+import {
+  MAX_EVENTS,
+  MAX_EVENT_ITEMS,
+  normalizeSavings,
+  calculateEvent,
+} from "../shared/events";
 const modules = import.meta.glob("../convex/**/*.ts");
 async function setup() {
   const t = convexTest({ schema, modules, transactionLimits: true });
@@ -102,6 +107,85 @@ describe("event persistence", () => {
           .take(201),
       ),
     ).toEqual([]);
+  });
+  it("round-trips monthly savings and notes with owner-only access and validation", async () => {
+    const { t, owner, other, id, detail } = await setup();
+    const draft = {
+      ...detail.draft,
+      budget: 900,
+      eventDate: "2027-03-10",
+      fundingDate: "2027-03-10",
+      notes: "Hotel deposit due in February.\nAsk about cancellation.",
+      savingsPlan: {
+        startDate: "2027-01-01",
+        startingFunding: 100,
+        months: [
+          { month: "2027-01", planned: 300, actual: 50 },
+          { month: "2027-02", planned: 250, actual: 0 },
+          { month: "2027-03", planned: 250, actual: 0 },
+        ],
+      },
+    };
+    await owner.mutation(api.events.save, { id, expectedRevision: 0, draft });
+    expect((await owner.query(api.events.get, { id }))?.draft).toEqual(draft);
+    await expect(
+      other.mutation(api.events.save, { id, expectedRevision: 1, draft }),
+    ).rejects.toThrow("not found");
+    await expect(
+      t.mutation(api.events.save, { id, expectedRevision: 1, draft }),
+    ).rejects.toThrow("signed in");
+    await expect(
+      owner.mutation(api.events.save, {
+        id,
+        expectedRevision: 1,
+        draft: { ...draft, notes: "x".repeat(5001) },
+      }),
+    ).rejects.toThrow("5,000");
+    await expect(
+      owner.mutation(api.events.save, {
+        id,
+        expectedRevision: 1,
+        draft: {
+          ...draft,
+          savingsPlan: {
+            ...draft.savingsPlan,
+            months: [...draft.savingsPlan.months, ...draft.savingsPlan.months],
+          },
+        },
+      }),
+    ).rejects.toThrow("unique");
+    await expect(
+      owner.mutation(api.events.save, {
+        id,
+        expectedRevision: 1,
+        draft: { ...draft, savingsPlan: undefined },
+      }),
+    ).rejects.toThrow("Reload");
+    expect((await owner.query(api.events.get, { id }))?.draft).toEqual(draft);
+  });
+  it("loads legacy events and preserves their funding gap when the new schedule is saved", async () => {
+    const { t, owner, id, detail } = await setup();
+    await t.run((ctx) =>
+      ctx.db.patch(id, { budget: 1000, fundingAmount: 200 }),
+    );
+    const legacy = await owner.query(api.events.get, { id });
+    if (!legacy) throw new Error("Missing event");
+    expect(legacy.draft.savingsPlan).toBeUndefined();
+    const draft = {
+      ...legacy.draft,
+      savingsPlan: normalizeSavings(legacy.draft, "2027-01-01"),
+    };
+    await owner.mutation(api.events.save, {
+      id,
+      expectedRevision: detail.event.revision,
+      draft,
+    });
+    const updated = await owner.query(api.events.get, { id });
+    if (!updated) throw new Error("Missing saved event");
+    expect(calculateEvent(updated.draft).gap).toBe(
+      calculateEvent(legacy.draft).gap,
+    );
+    expect(updated.draft.savingsPlan?.startingFunding).toBe(200);
   });
   it("enforces event and item limits", async () => {
     const { owner, id, detail } = await setup();

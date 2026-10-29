@@ -81,6 +81,8 @@ export const get = query({
       fundingDateIndependent,
       fundingMode,
       fundingAmount,
+      savingsPlan,
+      notes,
     } = event;
     return {
       event,
@@ -93,6 +95,8 @@ export const get = query({
         fundingDateIndependent,
         fundingMode,
         fundingAmount,
+        savingsPlan,
+        notes,
         items: (await items(ctx, id)).map(({ key, name, cost, paid }) => ({
           key,
           name,
@@ -159,6 +163,8 @@ export const save = mutation({
       });
     if (draft.currency !== event.currency)
       throw new ConvexError("An event keeps its original currency.");
+    if (event.savingsPlan && !draft.savingsPlan)
+      throw new ConvexError("Reload this event to use its savings plan.");
     const error = eventError(draft);
     if (error) throw new ConvexError(error);
     if (!draft.fundingDateIndependent && draft.fundingDate !== draft.eventDate)

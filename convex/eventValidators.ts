@@ -5,7 +5,16 @@ export const eventItemFields = {
   cost: v.number(),
   paid: v.number(),
 };
+export const savingsPlanValidator = v.object({
+  startDate: v.string(),
+  startingFunding: v.number(),
+  months: v.array(
+    v.object({ month: v.string(), planned: v.number(), actual: v.number() }),
+  ),
+});
 export const eventFields = {
+  savingsPlan: v.optional(savingsPlanValidator),
+  notes: v.optional(v.string()),
   name: v.string(),
   currency: v.string(),
   budget: v.number(),

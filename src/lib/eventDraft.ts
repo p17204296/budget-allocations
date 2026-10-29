@@ -1,16 +1,35 @@
-import { eventError, type EventDraft } from "../../shared/events";
+import {
+  eventError,
+  normalizeSavings,
+  type EventDraft,
+} from "../../shared/events";
 import { parseAmount } from "./scenarioDraft";
 export type EditableEvent = Omit<
   EventDraft,
-  "budget" | "fundingAmount" | "items"
+  "budget" | "fundingAmount" | "items" | "savingsPlan"
 > & {
+  savingsPlan: {
+    startDate: string;
+    startingFunding: string;
+    months: { month: string; planned: string; actual: string }[];
+  };
   budget: string;
   fundingAmount: string;
   items: { key: string; name: string; cost: string; paid: string }[];
 };
 export function editEvent(draft: EventDraft): EditableEvent {
+  const plan = normalizeSavings(draft);
   return {
     ...draft,
+    savingsPlan: {
+      ...plan,
+      startingFunding: String(plan.startingFunding),
+      months: plan.months.map((row) => ({
+        ...row,
+        planned: String(row.planned),
+        actual: String(row.actual),
+      })),
+    },
     budget: String(draft.budget),
     fundingAmount: String(draft.fundingAmount),
     items: draft.items.map((item) => ({
@@ -43,7 +62,31 @@ export function parseEvent(
       };
     items.push({ ...item, cost, paid });
   }
-  const parsed: EventDraft = { ...draft, budget, fundingAmount, items };
+  const startingFunding = parseAmount(
+    draft.savingsPlan.startingFunding,
+    draft.currency,
+  );
+  if (startingFunding === null)
+    return { draft: null, error: "Complete the starting funding amount." };
+  const months = [];
+  for (const row of draft.savingsPlan.months) {
+    const planned = parseAmount(row.planned, draft.currency);
+    const actual = parseAmount(row.actual, draft.currency);
+    if (planned === null || actual === null)
+      return {
+        draft: null,
+        error:
+          "Complete every month’s planned and actual savings. Blank amounts are not treated as zero.",
+      };
+    months.push({ month: row.month, planned, actual });
+  }
+  const parsed: EventDraft = {
+    ...draft,
+    budget,
+    fundingAmount,
+    items,
+    savingsPlan: { ...draft.savingsPlan, startingFunding, months },
+  };
   const error = eventError(parsed);
   return error ? { draft: null, error } : { draft: parsed, error: null };
 }
