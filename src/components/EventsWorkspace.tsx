@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useFloatingSave } from "./FloatingSave";
 import { SaveForm } from "./SaveForm";
 import { useEffect, useId, useRef, useState } from "react";
@@ -7,11 +8,17 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { api } from "../../convex/_generated/api";
 import {
   calculateEvent,
-  convertFunding,
+  savingMonths,
+  reconcileSavings,
+  rebalanceSavings,
+  plannedFunding,
+  savingsRebalanceSuggestion,
+  validDate,
   dateString,
   MAX_EVENT_ITEMS,
+  MAX_EVENT_AMOUNT,
+  MAX_STARTING_FUNDING,
   MAX_EVENTS,
-  type FundingMode,
 } from "../../shared/events";
 import { editEvent, parseEvent, type EditableEvent } from "../lib/eventDraft";
 import { ScenarioAutosave } from "../lib/scenarioAutosave";
@@ -19,7 +26,6 @@ import { parseAmount } from "../lib/scenarioDraft";
 import { getCurrencySymbol } from "../lib/currency";
 import { useNavigationGuard } from "../hooks/NavigationGuard";
 import { ConfirmDialog, Icon, PageHeader } from "./ui";
-import { ScenarioSelect } from "./ScenarioSelect";
 import { CalculationHelp } from "./CalculationHelp";
 import { toast } from "sonner";
 
@@ -88,7 +94,10 @@ export function EventsWorkspace() {
             </p>
           ) : null}
           {creating ? (
-            <SaveForm saveTitle="New event" saveLabel="Create event" saving={busy}
+            <SaveForm
+              saveTitle="New event"
+              saveLabel="Create event"
+              saving={busy}
               className="surface event-create"
               onSubmit={(event) => {
                 event.preventDefault();
@@ -232,6 +241,7 @@ function EventLoader({
     />
   );
 }
+/** Render currency input validation using the limit of the corresponding field. */
 function AmountField({
   label,
   value,
@@ -239,6 +249,8 @@ function AmountField({
   currency,
   invalid = false,
   errorText,
+  context,
+  maximum = MAX_EVENT_AMOUNT,
 }: {
   label: string;
   value: string;
@@ -246,9 +258,11 @@ function AmountField({
   currency: string;
   invalid?: boolean;
   errorText?: string;
+  context?: string;
+  maximum?: number;
 }) {
   const id = useId();
-  const invalidAmount = parseAmount(value, currency) === null;
+  const invalidAmount = parseAmount(value, currency, maximum) === null;
   return (
     <div className="event-field">
       <label htmlFor={id}>{label}</label>
@@ -256,6 +270,7 @@ function AmountField({
         <span aria-hidden="true">{getCurrencySymbol(currency)}</span>
         <input
           id={id}
+          aria-label={context ? `${label} — ${context}` : undefined}
           inputMode={currency === "JPY" ? "numeric" : "decimal"}
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -281,6 +296,7 @@ function AmountField({
     </div>
   );
 }
+/** Edit one event with revision-aware autosave and a manually adjustable savings plan. */
 function EventEditor({
   id,
   detail,
@@ -292,6 +308,7 @@ function EventEditor({
   deleted: boolean;
   onClose: () => void;
 }) {
+  const pendingItemFocus = useRef<string | null>(null);
   const save = useMutation(api.events.save);
   const remove = useMutation(api.events.remove);
   const client = useConvex();
@@ -302,6 +319,14 @@ function EventEditor({
   const [confirm, setConfirm] = useState<
     "delete" | "reload" | "discard" | null
   >(null);
+  const dismissalKey = `event-rebalance-dismissed:${id}`;
+  const [dismissedSuggestion, setDismissedSuggestion] = useState(() => {
+    try {
+      return sessionStorage.getItem(dismissalKey);
+    } catch {
+      return null;
+    }
+  });
   const [today, setToday] = useState(() => dateString(new Date()));
   useEffect(() => {
     const timer = setInterval(() => setToday(dateString(new Date())), 60_000);
@@ -349,8 +374,44 @@ function EventEditor({
   const result = parsed.draft
     ? calculateEvent(parsed.draft, new Date(`${today}T12:00:00`))
     : null;
+  const suggestion = parsed.draft
+    ? savingsRebalanceSuggestion(parsed.draft, today)
+    : null;
+  const suggestRebalance =
+    suggestion !== null && suggestion.key !== dismissedSuggestion;
   const edit = (next: EditableEvent) => {
     setError("");
+    const datesChanged =
+      next.fundingDate !== draft.fundingDate ||
+      next.savingsPlan.startDate !== draft.savingsPlan.startDate;
+    if (datesChanged) {
+      const months = savingMonths(next.savingsPlan.startDate, next.fundingDate);
+      if (months.length <= 1200) {
+        const existing = new Set(
+          next.savingsPlan.months.map((row) => row.month),
+        );
+        next = {
+          ...next,
+          savingsPlan: {
+            ...next.savingsPlan,
+            months: [
+              ...next.savingsPlan.months,
+              ...months
+                .filter((month) => !existing.has(month))
+                .map((month) => ({ month, planned: "0", actual: "0" })),
+            ].sort((a, b) => a.month.localeCompare(b.month)),
+          },
+        };
+        if (draft.savingsPlan.months.length === 0) {
+          const value = parseEvent(next).draft;
+          if (value)
+            next = editEvent({
+              ...value,
+              savingsPlan: rebalanceSavings(value, next.savingsPlan.startDate),
+            });
+        }
+      }
+    }
     auto.edit(next);
   };
   const updateItem = (
@@ -364,14 +425,13 @@ function EventEditor({
         item.key === key ? { ...item, [field]: value } : item,
       ),
     });
-  const switchFunding = (value: string) => {
-    const mode: FundingMode | null =
-      value === "available" || value === "total" ? value : null;
-    if (!mode || !parsed.draft) return;
+  const addItem = () => {
+    if (draft.items.length >= MAX_EVENT_ITEMS) return;
+    const key = crypto.randomUUID();
+    pendingItemFocus.current = key;
     edit({
       ...draft,
-      fundingMode: mode,
-      fundingAmount: String(convertFunding(parsed.draft, mode)),
+      items: [...draft.items, { key, name: "", cost: "", paid: "0" }],
     });
   };
   const run = async (action: () => Promise<void>) => {
@@ -401,15 +461,29 @@ function EventEditor({
   useFloatingSave({
     visible: auto.pending || deleted,
     title: "Event plan",
-    status: deleted ? "conflict" : auto.status === "saved" ? "dirty" : auto.status,
-    actionLabel: deleted || auto.status === "conflict" ? "Review changes" : !parsed.draft ? "Check fields" : auto.status === "error" ? "Retry save" : "Save now",
+    status: deleted
+      ? "conflict"
+      : auto.status === "saved"
+        ? "dirty"
+        : auto.status,
+    actionLabel:
+      deleted || auto.status === "conflict"
+        ? "Review changes"
+        : !parsed.draft
+          ? "Check fields"
+          : auto.status === "error"
+            ? "Retry save"
+            : "Save now",
     disabled: blocked,
     onSave: () => {
       if (deleted) setConfirm("discard");
       else if (auto.status === "conflict") setConfirm("reload");
       else if (!parsed.draft) {
-        const invalid = editor.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
-        invalid?.focus(); invalid?.scrollIntoView({ block: "center" });
+        const invalid = editor.current?.querySelector<HTMLElement>(
+          '[aria-invalid="true"]',
+        );
+        invalid?.focus();
+        invalid?.scrollIntoView({ block: "center" });
       } else void auto.flush();
     },
   });
@@ -526,68 +600,67 @@ function EventEditor({
             monthly budget.
           </p>
         </section>
-        <section className="surface event-summary" aria-label="Event summary">
-          <h2>Where your plan stands</h2>
-          {result ? (
-            <>
-              <div
-                className={`event-budget-result ${result.budgetDifference < 0 ? "event-overrun" : "event-within"}`}
-              >
-                <span>
-                  {result.budgetDifference < 0
-                    ? "Extra budget needed"
-                    : "Budget remaining"}
-                </span>
-                <strong>
-                  {money(Math.abs(result.budgetDifference), draft.currency)}
-                </strong>
-              </div>
-              <dl className="event-summary-totals">
-                <div>
-                  <dt>Total budget</dt>
-                  <dd>{money(result.budget, draft.currency)}</dd>
+        <div className="event-summary-container">
+          <section className="surface event-summary" aria-label="Event summary">
+            <h2>Where your plan stands</h2>
+            {result ? (
+              <>
+                <div
+                  className={`event-budget-result ${result.budgetDifference < 0 ? "event-overrun" : "event-within"}`}
+                >
+                  <span>
+                    {result.budgetDifference < 0
+                      ? "Extra budget needed"
+                      : "Budget remaining"}
+                  </span>
+                  <strong>
+                    {money(Math.abs(result.budgetDifference), draft.currency)}
+                  </strong>
                 </div>
-                <div>
-                  <dt>Total item costs</dt>
-                  <dd>{money(result.total, draft.currency)}</dd>
+                <dl className="event-summary-totals">
+                  <div>
+                    <dt>Total budget</dt>
+                    <dd>{money(result.budget, draft.currency)}</dd>
+                  </div>
+                  <div>
+                    <dt>Total item costs</dt>
+                    <dd>{money(result.total, draft.currency)}</dd>
+                  </div>
+                  <div>
+                    <dt>Paid</dt>
+                    <dd>{money(result.paid, draft.currency)}</dd>
+                  </div>
+                  <div>
+                    <dt>Still to pay</dt>
+                    <dd>{money(result.unpaid, draft.currency)}</dd>
+                  </div>
+                </dl>
+                <div className="event-funding-result">
+                  <span>
+                    Additional savings needed{" "}
+                    <CalculationHelp label="additional savings needed">
+                      Fund the higher of your budget or item costs. Subtract
+                      starting funding and actual monthly savings. Payments are
+                      already included in funding and are not subtracted again.
+                    </CalculationHelp>
+                  </span>
+                  <strong>{money(result.gap, draft.currency)}</strong>
+                  <p>
+                    {result.gap === 0
+                      ? "Fully funded"
+                      : draft.fundingDate && draft.fundingDate < today
+                        ? "The funding deadline has passed. This amount is needed now."
+                        : "Track your planned and actual savings below."}
+                  </p>
                 </div>
-                <div>
-                  <dt>Paid</dt>
-                  <dd>{money(result.paid, draft.currency)}</dd>
-                </div>
-                <div>
-                  <dt>Still to pay</dt>
-                  <dd>{money(result.unpaid, draft.currency)}</dd>
-                </div>
-              </dl>
-              <div className="event-funding-result">
-                <span>
-                  Additional savings needed{" "}
-                  <CalculationHelp label="additional savings needed">
-                    Fund the higher of your budget or item costs.{" "}
-                    {draft.fundingMode === "available"
-                      ? "Subtract payments already made and money still available."
-                      : "Subtract your total funded so far, which includes payments already made."}
-                  </CalculationHelp>
-                </span>
-                <strong>{money(result.gap, draft.currency)}</strong>
-                <p>
-                  {result.gap === 0
-                    ? "Your event’s funding target is covered."
-                    : result.contributions === 0
-                      ? "The funding deadline has passed. This amount is needed now."
-                      : result.monthly !== null
-                        ? `${money(result.monthly, draft.currency)} per month across ${result.contributions} contribution${result.contributions === 1 ? "" : "s"}, starting today.`
-                        : "Set a funding deadline below to see a monthly saving suggestion."}
-                </p>
-              </div>
-            </>
-          ) : (
-            <p className="event-field-error" role="status">
-              {parsed.error} Totals will return when the plan is valid.
-            </p>
-          )}
-        </section>
+              </>
+            ) : (
+              <p className="event-field-error" role="status">
+                {parsed.error} Totals will return when the plan is valid.
+              </p>
+            )}
+          </section>
+        </div>
         <section className="event-items">
           <header className="events-list-heading">
             <h2>What you need to buy</h2>
@@ -595,15 +668,7 @@ function EventEditor({
               type="button"
               className="btn-secondary"
               disabled={draft.items.length >= MAX_EVENT_ITEMS}
-              onClick={() =>
-                edit({
-                  ...draft,
-                  items: [
-                    ...draft.items,
-                    { key: crypto.randomUUID(), name: "", cost: "", paid: "0" },
-                  ],
-                })
-              }
+              onClick={addItem}
             >
               <Icon name="plus" />
               Add item
@@ -635,6 +700,16 @@ function EventEditor({
                       Item description
                     </label>
                     <input
+                      ref={(node) => {
+                        if (node && pendingItemFocus.current === item.key) {
+                          pendingItemFocus.current = null;
+                          node.focus({ preventScroll: true });
+                          node.scrollIntoView({
+                            block: "center",
+                            behavior: "instant",
+                          });
+                        }
+                      }}
                       id={`event-item-${item.key}`}
                       value={item.name}
                       maxLength={120}
@@ -709,93 +784,342 @@ function EventEditor({
             </p>
           ) : null}
         </section>
-        <section className="surface event-funding">
-          <h2>How you’ll fund it</h2>
-          <p className="event-help">
-            Save towards your full budget, or the item total if it is higher.
-          </p>
-          <div className="event-field">
-            <label htmlFor="event-funding-mode">
-              How are you recording your funding?
-            </label>
-            <ScenarioSelect
-              id="event-funding-mode"
-              value={draft.fundingMode}
-              disabled={!parsed.draft}
-              onChange={(event) => switchFunding(event.target.value)}
-              options={[
-                { value: "available", label: "Money still available" },
-                { value: "total", label: "Total funded so far" },
-              ]}
-            />
+        <section
+          className="surface event-funding"
+          aria-labelledby="savings-heading"
+        >
+          <header className="event-savings-heading">
+            <div>
+              <span className="event-eyebrow">A month at a time</span>
+              <h2 id="savings-heading">Your savings plan</h2>
+            </div>
+            <p className="event-help">
+              Plan what you’ll put aside, then record what you actually saved.
+            </p>
+          </header>
+          <div className="event-savings-setup">
+            <div>
+              <AmountField
+                label="Already funded before this plan"
+                maximum={MAX_STARTING_FUNDING}
+                value={draft.savingsPlan.startingFunding}
+                currency={draft.currency}
+                onChange={(startingFunding) =>
+                  edit({
+                    ...draft,
+                    savingsPlan: { ...draft.savingsPlan, startingFunding },
+                  })
+                }
+              />
+              <p className="event-help">
+                Money already committed to this event, including payments
+                already made. Don’t include savings entered in the monthly rows.
+                Starting from zero is fine.
+              </p>
+            </div>
+            <div className="event-field">
+              <label htmlFor="saving-start">Start saving from</label>
+              <input
+                id="saving-start"
+                aria-invalid={
+                  !draft.savingsPlan.startDate ||
+                  !validDate(draft.savingsPlan.startDate) ||
+                  Boolean(
+                    draft.fundingDate &&
+                    draft.savingsPlan.startDate > draft.fundingDate,
+                  )
+                }
+                type="date"
+                value={draft.savingsPlan.startDate}
+                onChange={(event) =>
+                  edit({
+                    ...draft,
+                    savingsPlan: {
+                      ...draft.savingsPlan,
+                      startDate: event.target.value,
+                    },
+                  })
+                }
+              />
+            </div>
+            <div className="event-field">
+              <label htmlFor="event-funding-date">
+                Have money ready by (optional)
+              </label>
+              <input
+                id="event-funding-date"
+                aria-invalid={
+                  !validDate(draft.fundingDate) ||
+                  Boolean(
+                    draft.fundingDate &&
+                    draft.savingsPlan.startDate > draft.fundingDate,
+                  )
+                }
+                type="date"
+                value={draft.fundingDate}
+                onChange={(event) =>
+                  edit({
+                    ...draft,
+                    fundingDate: event.target.value,
+                    fundingDateIndependent: true,
+                  })
+                }
+              />
+              <p className="event-help">
+                {draft.fundingDateIndependent
+                  ? "A separate deadline for advance payments."
+                  : "Follows your event date."}{" "}
+                Include the final month’s savings by this date.
+              </p>
+              {draft.fundingDateIndependent ? (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() =>
+                    edit({
+                      ...draft,
+                      fundingDate: draft.eventDate,
+                      fundingDateIndependent: false,
+                    })
+                  }
+                >
+                  Use event date
+                </button>
+              ) : null}
+            </div>
           </div>
-          <p className="event-help">
-            {draft.fundingMode === "available"
-              ? "Money currently set aside for this event, excluding anything already spent. Update this balance yourself after purchases."
-              : "All money committed to this event, including payments already made. This must cover your recorded payments."}{" "}
-            Changing the funding method converts the amount for you.
-          </p>
-          <AmountField
-            label={
-              draft.fundingMode === "available"
-                ? "Money still available"
-                : "Total funded so far"
-            }
-            value={draft.fundingAmount}
-            errorText={
-              parsed.error?.includes("Total funded so far must cover")
-                ? parsed.error
-                : undefined
-            }
-            currency={draft.currency}
-            onChange={(fundingAmount) => edit({ ...draft, fundingAmount })}
-          />
-          <div className="event-field">
-            <label htmlFor="event-funding-date">
-              Have money ready by (optional)
-            </label>
-            <input
-              type="date"
-              id="event-funding-date"
-              value={draft.fundingDate}
-              onChange={(event) =>
-                edit({
-                  ...draft,
-                  fundingDate: event.target.value,
-                  fundingDateIndependent: true,
-                })
-              }
-            />
-          </div>
-          <p className="event-help">
-            Allow time to pay for bookings before the event.{" "}
-            {draft.fundingDateIndependent
-              ? "You have set a separate funding deadline."
-              : "This deadline follows your event date."}
-          </p>
-          {draft.fundingDateIndependent ? (
+          {result ? (
+            <dl className="event-savings-totals">
+              <div>
+                <dt>Funding target</dt>
+                <dd>{money(result.target, draft.currency)}</dd>
+              </div>
+              <div>
+                <dt>Starting funding</dt>
+                <dd>{money(result.startingFunding, draft.currency)}</dd>
+              </div>
+              <div>
+                <dt>Actual monthly savings</dt>
+                <dd>{money(result.actual, draft.currency)}</dd>
+              </div>
+              <div>
+                <dt>{result.gap === 0 ? "Fully funded" : "Still needed"}</dt>
+                <dd>{money(result.gap, draft.currency)}</dd>
+              </div>
+            </dl>
+          ) : null}
+          {result?.paymentWarning ? (
+            <p className="event-savings-warning" role="status">
+              Recorded payments exceed the funding entered. Check your starting
+              funding and actual savings.
+            </p>
+          ) : null}
+          <div className="event-savings-toolbar">
+            <div>
+              <h3>Month-by-month savings</h3>
+              <p className="event-help">
+                Both the start and deadline months are included. Planned amounts
+                stay fixed until you edit or rebalance them.
+              </p>
+            </div>
             <button
               type="button"
-              className="btn-secondary"
-              onClick={() =>
-                edit({
-                  ...draft,
-                  fundingDate: draft.eventDate,
-                  fundingDateIndependent: false,
-                })
+              className={suggestRebalance ? "btn-primary" : "btn-secondary"}
+              aria-describedby={
+                suggestRebalance ? "rebalance-suggestion" : undefined
               }
+              disabled={
+                !parsed.draft || !draft.fundingDate || draft.fundingDate < today
+              }
+              onClick={() => {
+                if (!parsed.draft) return;
+                const value = {
+                  ...parsed.draft,
+                  savingsPlan: reconcileSavings(
+                    parsed.draft.savingsPlan ?? {
+                      startDate: today,
+                      startingFunding: 0,
+                      months: [],
+                    },
+                    draft.fundingDate,
+                  ),
+                };
+                edit(
+                  editEvent({
+                    ...value,
+                    savingsPlan: rebalanceSavings(value, today),
+                  }),
+                );
+              }}
             >
-              Use event date
+              Rebalance remaining months
             </button>
+          </div>
+          {suggestRebalance && suggestion && (
+            <div
+              className="event-rebalance-suggestion"
+              role="status"
+              id="rebalance-suggestion"
+            >
+              <div>
+                <strong>
+                  {suggestion.kind === "shortfall"
+                    ? "Your savings plan needs a little more"
+                    : "You could reduce your planned savings"}
+                </strong>
+                <p>
+                  {suggestion.kind === "shortfall"
+                    ? `Your remaining planned savings fall ${money(suggestion.amount, draft.currency)} short of what’s still needed. Rebalance to spread the difference across the remaining months.`
+                    : `Your remaining planned savings are ${money(suggestion.amount, draft.currency)} above what’s still needed. Rebalance if you’d like to lower them.`}
+                </p>
+                <p>
+                  Past plans and all recorded savings stay as they are. You can
+                  also edit the monthly amounts yourself.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  setDismissedSuggestion(suggestion.key);
+                  try {
+                    sessionStorage.setItem(dismissalKey, suggestion.key);
+                  } catch {
+                    /* Dismissal still works when browser storage is unavailable. */
+                  }
+                }}
+              >
+                Keep my plan
+              </button>
+            </div>
+          )}
+          {!draft.fundingDate ? (
+            <p className="event-help">
+              Choose a deadline to build your monthly savings schedule.
+            </p>
+          ) : null}
+          {([true, false] as const).map((active) => {
+            const months = new Set(
+              savingMonths(draft.savingsPlan.startDate, draft.fundingDate),
+            );
+            const rows = draft.savingsPlan.months.filter(
+              (row) => months.has(row.month) === active,
+            );
+            if (!rows.length) return null;
+            return (
+              <div key={String(active)} className="event-savings-schedule">
+                {!active ? (
+                  <>
+                    <h3>Outside current schedule</h3>
+                    <p className="event-help">
+                      These entries are retained. Actual savings still count
+                      toward your event; planned amounts are excluded from the
+                      current schedule.
+                    </p>
+                  </>
+                ) : null}
+                <div className="event-month-columns" aria-hidden="true">
+                  <span>Month</span>
+                  <span>Planned savings</span>
+                  <span>Actually saved</span>
+                </div>
+                {rows.map((row) => {
+                  const label = new Intl.DateTimeFormat(undefined, {
+                    month: "long",
+                    year: "numeric",
+                    timeZone: "UTC",
+                  }).format(new Date(`${row.month}-01T12:00:00Z`));
+                  return (
+                    <div className="event-month-row" key={row.month}>
+                      <strong>{label}</strong>
+                      {(["planned", "actual"] as const).map((field) => (
+                        <AmountField
+                          key={field}
+                          label={
+                            field === "planned"
+                              ? "Planned savings"
+                              : "Actually saved"
+                          }
+                          context={label}
+                          currency={draft.currency}
+                          value={row[field]}
+                          onChange={(value) =>
+                            edit({
+                              ...draft,
+                              savingsPlan: {
+                                ...draft.savingsPlan,
+                                months: draft.savingsPlan.months.map((entry) =>
+                                  entry.month === row.month
+                                    ? { ...entry, [field]: value }
+                                    : entry,
+                                ),
+                              },
+                            })
+                          }
+                        />
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+          {parsed.draft && result ? (
+            <div className="event-savings-forecast">
+              <strong>
+                Planned funding:{" "}
+                {money(plannedFunding(parsed.draft), draft.currency)}
+              </strong>
+              <span>
+                {plannedFunding(parsed.draft) >= result.target
+                  ? "Your plan covers the target."
+                  : `${money(result.target - plannedFunding(parsed.draft), draft.currency)} more needs to be planned.`}
+              </span>
+              <p className="event-help">
+                This forecast combines starting funding and planned savings in
+                the current schedule, plus actual savings outside it. It is
+                separate from money actually funded.
+              </p>
+            </div>
           ) : null}
           <p className="event-help">
-            Monthly suggestions count a contribution today, then one each month
-            through your deadline. Month-end dates use the last available day.
-            Payments and funding amounts are manual; your account balances stay
-            as they are.
+            All amounts are entered manually. Recording savings or payments does
+            not move money or update your bank balances.
+          </p>
+        </section>
+        <section className="surface event-notes">
+          <h2>Event notes</h2>
+          <label className="sr-only" htmlFor="event-notes">
+            Event notes
+          </label>
+          <textarea
+            id="event-notes"
+            value={draft.notes ?? ""}
+            maxLength={5000}
+            rows={5}
+            placeholder="Booking details, reminders, ideas, or anything you want to remember…"
+            onChange={(event) => edit({ ...draft, notes: event.target.value })}
+          />
+          <p className="event-help">
+            {(draft.notes ?? "").length.toLocaleString()} / 5,000 characters ·
+            Saved with your event
           </p>
         </section>
       </fieldset>
+      {createPortal(
+        <button
+          type="button"
+          className="event-add-floating"
+          aria-label="Add item to event"
+          title="Add item"
+          disabled={blocked || deleted || draft.items.length >= MAX_EVENT_ITEMS}
+          onClick={addItem}
+        >
+          <Icon name="plus" />
+          <span className="sr-only">Add item</span>
+        </button>,
+        document.body,
+      )}
       {auto.pending || deleted ? (
         <button
           type="button"

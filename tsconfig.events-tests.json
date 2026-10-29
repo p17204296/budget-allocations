@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "types": ["vite/client"]
+  },
+  "include": [
+    "tests/events.test.ts",
+    "tests/eventsBackend.test.ts",
+    "tests/eventsWorkspace.test.tsx",
+    "tests/eventAutosave.test.ts"
+  ]
+}
