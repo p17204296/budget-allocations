@@ -1,5 +1,6 @@
 import {
   eventError,
+  MAX_STARTING_FUNDING,
   normalizeSavings,
   type EventDraft,
 } from "../../shared/events";
@@ -17,6 +18,7 @@ export type EditableEvent = Omit<
   fundingAmount: string;
   items: { key: string; name: string; cost: string; paid: string }[];
 };
+/** Prepare text inputs and normalize legacy funding without changing recorded money. */
 export function editEvent(draft: EventDraft): EditableEvent {
   const plan = normalizeSavings(draft);
   return {
@@ -39,6 +41,7 @@ export function editEvent(draft: EventDraft): EditableEvent {
     })),
   };
 }
+/** Parse every input and apply the shared server-side event validation rules. */
 export function parseEvent(
   draft: EditableEvent,
 ): { draft: EventDraft; error: null } | { draft: null; error: string } {
@@ -65,6 +68,7 @@ export function parseEvent(
   const startingFunding = parseAmount(
     draft.savingsPlan.startingFunding,
     draft.currency,
+    MAX_STARTING_FUNDING,
   );
   if (startingFunding === null)
     return { draft: null, error: "Complete the starting funding amount." };

@@ -2,6 +2,9 @@ import { minor, minorFactor } from "./scenarios";
 
 export const MAX_EVENTS = 20;
 export const MAX_EVENT_ITEMS = 200;
+export const MAX_EVENT_AMOUNT = 1_000_000_000;
+/** A legacy available balance plus the maximum payments across all event items. */
+export const MAX_STARTING_FUNDING = MAX_EVENT_AMOUNT * (MAX_EVENT_ITEMS + 1);
 export type FundingMode = "available" | "total";
 export type EventItem = {
   key: string;
@@ -28,6 +31,7 @@ export type EventDraft = {
   fundingAmount: number;
   items: EventItem[];
 };
+/** Accept an optional ISO calendar date, rejecting impossible dates. */
 export function validDate(value: string): boolean {
   if (value === "") return true;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -36,15 +40,16 @@ export function validDate(value: string): boolean {
     Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
   );
 }
+/** Validate saved event amounts and schedules, retaining legacy aggregate funding. */
 export function eventError(draft: EventDraft): string | null {
   if (!draft.name.trim() || draft.name.trim().length > 80)
     return "Give your event a name of 1–80 characters.";
   if (!validDate(draft.eventDate) || !validDate(draft.fundingDate))
     return "Enter a valid date.";
-  const validAmount = (value: number) =>
+  const validAmount = (value: number, maximum = MAX_EVENT_AMOUNT) =>
     Number.isFinite(value) &&
     value >= 0 &&
-    value <= 1_000_000_000 &&
+    value <= maximum &&
     minor(value, draft.currency) / minorFactor(draft.currency) === value;
   if (!validAmount(draft.budget) || !validAmount(draft.fundingAmount))
     return "Enter valid, non-negative budget and funding amounts in your currency’s smallest unit.";
@@ -56,7 +61,7 @@ export function eventError(draft: EventDraft): string | null {
       return "Choose a valid saving start date.";
     if (draft.fundingDate && plan.startDate > draft.fundingDate)
       return "Start saving on or before the funding deadline.";
-    if (!validAmount(plan.startingFunding))
+    if (!validAmount(plan.startingFunding, MAX_STARTING_FUNDING))
       return "Enter a valid starting funding amount.";
     if (plan.months.length > 1200)
       return "A savings plan supports up to 1,200 months.";
@@ -120,6 +125,7 @@ export function contributionCount(
   const lastContribution = new Date(endYear, endMonth, Math.min(day, lastDay));
   return monthDifference + (dateString(lastContribution) <= deadline ? 1 : 0);
 }
+/** Calculate in minor units; payments are already included in starting funding. */
 export function calculateEvent(draft: EventDraft, today = new Date()) {
   const factor = minorFactor(draft.currency);
   const total = draft.items.reduce(
@@ -200,6 +206,7 @@ export function savingMonths(start: string, deadline: string): string[] {
       .padStart(4, "0")}-${((value % 12) + 1).toString().padStart(2, "0")}`;
   });
 }
+/** Add missing active months without deleting existing plans or actual savings. */
 export function reconcileSavings(
   plan: SavingsPlan,
   deadline: string,
@@ -217,6 +224,7 @@ export function reconcileSavings(
     ].sort((a, b) => a.month.localeCompare(b.month)),
   };
 }
+/** Convert legacy funding once, preserving its full available balance and payments. */
 export function normalizeSavings(
   draft: EventDraft,
   today = dateString(new Date()),
@@ -231,6 +239,7 @@ export function normalizeSavings(
   );
   return rebalanceSavings({ ...draft, savingsPlan: plan }, startDate);
 }
+/** Spread the funding gap across eligible months, preserving history and actuals. */
 export function rebalanceSavings(
   draft: EventDraft,
   today = dateString(new Date()),
@@ -259,6 +268,7 @@ export function rebalanceSavings(
     }),
   };
 }
+/** Forecast active planned savings plus actual savings outside the schedule. */
 export function plannedFunding(draft: EventDraft): number {
   if (!draft.savingsPlan) return 0;
   const active = new Set(

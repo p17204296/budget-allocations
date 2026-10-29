@@ -16,6 +16,8 @@ import {
   validDate,
   dateString,
   MAX_EVENT_ITEMS,
+  MAX_EVENT_AMOUNT,
+  MAX_STARTING_FUNDING,
   MAX_EVENTS,
 } from "../../shared/events";
 import { editEvent, parseEvent, type EditableEvent } from "../lib/eventDraft";
@@ -239,6 +241,7 @@ function EventLoader({
     />
   );
 }
+/** Render currency input validation using the limit of the corresponding field. */
 function AmountField({
   label,
   value,
@@ -247,6 +250,7 @@ function AmountField({
   invalid = false,
   errorText,
   context,
+  maximum = MAX_EVENT_AMOUNT,
 }: {
   label: string;
   value: string;
@@ -255,9 +259,10 @@ function AmountField({
   invalid?: boolean;
   errorText?: string;
   context?: string;
+  maximum?: number;
 }) {
   const id = useId();
-  const invalidAmount = parseAmount(value, currency) === null;
+  const invalidAmount = parseAmount(value, currency, maximum) === null;
   return (
     <div className="event-field">
       <label htmlFor={id}>{label}</label>
@@ -291,6 +296,7 @@ function AmountField({
     </div>
   );
 }
+/** Edit one event with revision-aware autosave and a manually adjustable savings plan. */
 function EventEditor({
   id,
   detail,
@@ -795,6 +801,7 @@ function EventEditor({
             <div>
               <AmountField
                 label="Already funded before this plan"
+                maximum={MAX_STARTING_FUNDING}
                 value={draft.savingsPlan.startingFunding}
                 currency={draft.currency}
                 onChange={(startingFunding) =>

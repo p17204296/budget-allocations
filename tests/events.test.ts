@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateEvent,
+  MAX_STARTING_FUNDING,
   normalizeSavings,
   rebalanceSavings,
   reconcileSavings,
@@ -355,4 +356,91 @@ describe("rebalance suggestions", () => {
       savingsRebalanceSuggestion({ ...draft, fundingDate: "" }, "2027-02-01"),
     ).toBeNull();
   });
+});
+
+describe("legacy aggregate funding limits", () => {
+  it("keeps aggregate limits bounded without raising individual amount limits", () => {
+    const value = {
+      ...draft(),
+      savingsPlan: {
+        startDate: "2026-10-29",
+        startingFunding: MAX_STARTING_FUNDING,
+        months: [],
+      },
+    };
+    expect(eventError(value)).toBeNull();
+    for (const startingFunding of [
+      MAX_STARTING_FUNDING + 1,
+      -1,
+      NaN,
+      Infinity,
+      0.001,
+    ]) {
+      expect(
+        eventError({
+          ...value,
+          savingsPlan: { ...value.savingsPlan, startingFunding },
+        }),
+      ).not.toBeNull();
+      expect(
+        parseEvent(
+          editEvent({
+            ...value,
+            savingsPlan: { ...value.savingsPlan, startingFunding },
+          }),
+        ).draft,
+      ).toBeNull();
+    }
+    expect(eventError({ ...value, budget: 1_000_000_001 })).not.toBeNull();
+    expect(
+      eventError({ ...value, fundingAmount: 1_000_000_001 }),
+    ).not.toBeNull();
+    expect(
+      eventError({
+        ...value,
+        items: [
+          { key: "too-much", name: "Too much", cost: 1_000_000_001, paid: 0 },
+        ],
+      }),
+    ).not.toBeNull();
+    expect(
+      eventError({
+        ...value,
+        savingsPlan: {
+          ...value.savingsPlan,
+          months: [{ month: "2026-10", planned: 1_000_000_001, actual: 0 }],
+        },
+      }),
+    ).not.toBeNull();
+  });
+
+  it.each(["GBP", "JPY"])(
+    "preserves the largest valid legacy aggregate in %s",
+    (currency) => {
+      const legacy = {
+        ...draft(),
+        currency,
+        fundingAmount: 1_000_000_000,
+        items: Array.from({ length: 200 }, (_, index) => ({
+          key: String(index),
+          name: `Payment ${index}`,
+          cost: 1_000_000_000,
+          paid: 1_000_000_000,
+        })),
+      };
+      expect(eventError(legacy)).toBeNull();
+      const editable = editEvent(legacy);
+      expect(editable.savingsPlan.startingFunding).toBe("201000000000");
+      const parsed = parseEvent({ ...editable, notes: "An unrelated note" });
+      expect(parsed.error).toBeNull();
+      if (!parsed.draft)
+        throw new Error("Expected migrated aggregate to remain valid");
+      expect(eventError(parsed.draft)).toBeNull();
+      expect(calculateEvent(parsed.draft).funded).toBe(201_000_000_000);
+      expect(calculateEvent(parsed.draft).gap).toBe(calculateEvent(legacy).gap);
+      expect(
+        parseEvent(editEvent({ ...parsed.draft, items: [] })).error,
+      ).toBeNull();
+    },
+  );
 });

@@ -365,6 +365,30 @@ describe("event editor", () => {
         .hasAttribute("disabled"),
     ).toBe(true);
   });
+  it("keeps migrated starting funding valid and can save unrelated notes", async () => {
+    if (!mock.state.detail) throw new Error("Missing legacy fixture");
+    mock.state.detail.draft.fundingAmount = 1_000_000_000;
+    await open();
+    const funding = screen.getByLabelText("Already funded before this plan");
+    expect(funding.getAttribute("value")).toBe("1000000100");
+    expect(funding.getAttribute("aria-invalid")).toBe("false");
+    fireEvent.change(screen.getByLabelText("Event notes"), {
+      target: { value: "Notes still save" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    });
+    expect(mock.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        draft: expect.objectContaining({
+          savingsPlan: expect.objectContaining({
+            startingFunding: 1_000_000_100,
+          }),
+          notes: "Notes still save",
+        }),
+      }),
+    );
+  });
   it("follows event dates until a separate deadline is set", async () => {
     await open();
     fireEvent.change(screen.getByLabelText("Event date (optional)"), {

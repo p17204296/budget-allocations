@@ -8,10 +8,17 @@ Verified on 29 October 2026 on branch `feat/event-savings-plan`, against develop
 - Added tests for missed past contributions, unfinished current months, lower targets/full funding, clearing the suggestion after rebalancing, invalid-input suppression, declining without changing plans, and retaining dismissal across reopening in the same tab.
 - Browser-verified the highlighted action and £300 shortfall message at 390 × 844. Clicking **Keep my plan** removed the message and returned the action to its secondary style while the January planned/actual entries stayed at £300/£150.
 
+## PR review follow-up: legacy aggregate funding
+
+- Reproduced the reported regression with failing input, draft-parser and backend-save tests: legacy available funding plus recorded payments can exceed the original per-field limit.
+- Give starting funding an aggregate cap equal to the maximum legacy balance plus payments for all 200 items. Use that cap consistently in the input, parser and shared server validation. Keep individual budgets, legacy funding fields, item amounts and monthly entries at their original limit.
+- Regression tests cover the maximum aggregate in GBP and JPY, preserving funding after item removal, rejecting invalid or excessive aggregates, and saving unrelated notes through both the editor and backend.
+- Add concise JSDoc for the financial rules and draft conversion helpers highlighted by the documentation warning.
+
 ## Automated checks
 
 - `npm run typecheck`: application, Vite configuration, Convex and all four event test files passed strict checking. The event test configuration is now part of this command.
-- `npm test`: all 103 tests passed. Coverage includes legacy funding conversion, zero/partial/full funding, inclusive calendar months, minor-unit rounding and JPY, explicit rebalancing, retained out-of-schedule actuals, invalid inputs, notes persistence, ownership, conflicts, retry, navigation protection and focus after either add-item control.
+- `npm test`: all 108 tests passed. Coverage includes legacy funding conversion, zero/partial/full funding, inclusive calendar months, minor-unit rounding and JPY, explicit rebalancing, retained out-of-schedule actuals, invalid inputs, notes persistence, ownership, conflicts, retry, navigation protection and focus after either add-item control.
 - `npm run build`: passed. Existing advisories remain for outdated Browserslist data and the main JavaScript chunk exceeding 500 kB (approximately 541 kB before gzip).
 - `npx convex dev --once`: development schema and functions pushed successfully; optional fields accept existing event records.
 - `git diff --check`: passed.

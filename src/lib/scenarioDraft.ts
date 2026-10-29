@@ -37,11 +37,16 @@ export function editable(draft: ScenarioDraft): EditableDraft {
     oneOff: draft.oneOff.map((row) => ({ ...row, amount: String(row.amount) })),
   };
 }
-export function parseAmount(value: string, currency: string): number | null {
+/** Parse a non-negative currency amount; aggregate fields can supply their own cap. */
+export function parseAmount(
+  value: string,
+  currency: string,
+  maximum = 1_000_000_000,
+): number | null {
   const pattern = minorFactor(currency) === 1 ? /^\d+$/ : /^\d+(?:\.\d{1,2})?$/;
   if (!pattern.test(value)) return null;
   const number = Number(value);
-  return Number.isFinite(number) && number <= 1_000_000_000 ? number : null;
+  return Number.isFinite(number) && number <= maximum ? number : null;
 }
 export function serialise(draft: EditableDraft): ScenarioDraft | null {
   const cleanName = (name: string) =>

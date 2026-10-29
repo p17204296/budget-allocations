@@ -187,6 +187,36 @@ describe("event persistence", () => {
     );
     expect(updated.draft.savingsPlan?.startingFunding).toBe(200);
   });
+  it("saves a migrated aggregate above the legacy field cap without reducing funding", async () => {
+    const { owner, id, detail } = await setup();
+    const legacy = {
+      ...detail.draft,
+      fundingAmount: 1_000_000_000,
+      items: [{ key: "deposit", name: "Deposit", cost: 100, paid: 100 }],
+    };
+    await owner.mutation(api.events.save, {
+      id,
+      expectedRevision: 0,
+      draft: legacy,
+    });
+    const stored = await owner.query(api.events.get, { id });
+    if (!stored) throw new Error("Missing legacy event");
+    const draft = {
+      ...stored.draft,
+      notes: "No funding edits",
+      savingsPlan: normalizeSavings(stored.draft, "2027-01-01"),
+    };
+    expect(draft.savingsPlan.startingFunding).toBe(1_000_000_100);
+    await owner.mutation(api.events.save, { id, expectedRevision: 1, draft });
+    await owner.mutation(api.events.save, {
+      id,
+      expectedRevision: 2,
+      draft: { ...draft, items: [] },
+    });
+    const updated = await owner.query(api.events.get, { id });
+    expect(updated?.draft.savingsPlan?.startingFunding).toBe(1_000_000_100);
+    expect(updated?.draft.notes).toBe("No funding edits");
+  });
   it("enforces event and item limits", async () => {
     const { owner, id, detail } = await setup();
     for (let i = 1; i < MAX_EVENTS; i++)
