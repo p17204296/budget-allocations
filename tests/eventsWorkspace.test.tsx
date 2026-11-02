@@ -252,6 +252,67 @@ describe("event editor", () => {
         .getByLabelText("Actually saved — January 2027")
         .getAttribute("value"),
     ).toBe("50");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Delete January 2027 from outside current schedule",
+      }),
+    );
+    expect(screen.getByRole("dialog").textContent).toContain(
+      "This removes both planned and actual savings for this month.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(
+      screen
+        .getByLabelText("Actually saved — January 2027")
+        .getAttribute("value"),
+    ).toBe("50");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Delete January 2027 from outside current schedule",
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Delete month" }));
+    expect(
+      screen.queryByLabelText("Actually saved — January 2027"),
+    ).toBeNull();
+    fireEvent.change(screen.getByLabelText("Start saving from"), {
+      target: { value: "2027-01-01" },
+    });
+    expect(
+      screen
+        .getByLabelText("Actually saved — January 2027")
+        .getAttribute("value"),
+    ).toBe("0");
+  });
+  it("rebalances from the selected savings start date, including past months", async () => {
+    await open();
+    fireEvent.change(screen.getByLabelText("Start saving from"), {
+      target: { value: "2026-01-01" },
+    });
+    fireEvent.change(screen.getByLabelText("Event date (optional)"), {
+      target: { value: "2027-03-10" },
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Rebalance remaining months" }),
+    );
+
+    expect(
+      Number(
+        screen
+          .getByLabelText("Planned savings — January 2026")
+          .getAttribute("value"),
+      ),
+    ).toBeGreaterThan(0);
+    expect(
+      Number(
+        screen
+          .getByLabelText("Planned savings — September 2026")
+          .getAttribute("value"),
+      ),
+    ).toBeGreaterThan(0);
   });
   it("highlights a needed rebalance, lets the user decline, and prompts again for a changed shortfall", async () => {
     await open();
