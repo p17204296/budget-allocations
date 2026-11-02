@@ -319,6 +319,10 @@ function EventEditor({
   const [confirm, setConfirm] = useState<
     "delete" | "reload" | "discard" | null
   >(null);
+  const [monthToDelete, setMonthToDelete] = useState<{
+    month: string;
+    label: string;
+  } | null>(null);
   const dismissalKey = `event-rebalance-dismissed:${id}`;
   const [dismissedSuggestion, setDismissedSuggestion] = useState(() => {
     try {
@@ -407,7 +411,11 @@ function EventEditor({
           if (value)
             next = editEvent({
               ...value,
-              savingsPlan: rebalanceSavings(value, next.savingsPlan.startDate),
+              savingsPlan: rebalanceSavings(
+                value,
+                next.savingsPlan.startDate,
+                today,
+              ),
             });
         }
       }
@@ -947,7 +955,11 @@ function EventEditor({
                 edit(
                   editEvent({
                     ...value,
-                    savingsPlan: rebalanceSavings(value, today),
+                    savingsPlan: rebalanceSavings(
+                      value,
+                      value.savingsPlan.startDate,
+                      today,
+                    ),
                   }),
                 );
               }}
@@ -969,12 +981,15 @@ function EventEditor({
                 </strong>
                 <p>
                   {suggestion.kind === "shortfall"
-                    ? `Your remaining planned savings fall ${money(suggestion.amount, draft.currency)} short of what’s still needed. Rebalance to spread the difference across the remaining months.`
+                    ? draft.savingsPlan.startDate.slice(0, 7) < today.slice(0, 7)
+                      ? `Your remaining planned savings fall ${money(suggestion.amount, draft.currency)} short of what’s still needed. This can include planned contributions from past months. Rebalance spreads the gap from your selected start month; adjust current or future planned amounts if you need to catch up by the deadline.`
+                      : `Your remaining planned savings fall ${money(suggestion.amount, draft.currency)} short of what’s still needed. Rebalance to spread the difference across the remaining months.`
                     : `Your remaining planned savings are ${money(suggestion.amount, draft.currency)} above what’s still needed. Rebalance if you’d like to lower them.`}
                 </p>
                 <p>
-                  Past plans and all recorded savings stay as they are. You can
-                  also edit the monthly amounts yourself.
+                  Months before your selected start date and all recorded
+                  savings stay as they are. You can also edit the monthly
+                  amounts yourself.
                 </p>
               </div>
               <button
@@ -1007,7 +1022,10 @@ function EventEditor({
             );
             if (!rows.length) return null;
             return (
-              <div key={String(active)} className="event-savings-schedule">
+              <div
+                key={String(active)}
+                className={`event-savings-schedule${active ? "" : " event-savings-schedule-outside"}`}
+              >
                 {!active ? (
                   <>
                     <h3>Outside current schedule</h3>
@@ -1022,6 +1040,7 @@ function EventEditor({
                   <span>Month</span>
                   <span>Planned savings</span>
                   <span>Actually saved</span>
+                  {!active ? <span>Remove</span> : null}
                 </div>
                 {rows.map((row) => {
                   const label = new Intl.DateTimeFormat(undefined, {
@@ -1058,6 +1077,17 @@ function EventEditor({
                           }
                         />
                       ))}
+                      {!active ? (
+                        <button
+                          type="button"
+                          className="event-month-delete"
+                          aria-label={`Delete ${label} from outside current schedule`}
+                          title={`Delete ${label} from outside current schedule`}
+                          onClick={() => setMonthToDelete({ month: row.month, label })}
+                        >
+                          <Icon name="trash" />
+                        </button>
+                      ) : null}
                     </div>
                   );
                 })}
@@ -1184,6 +1214,26 @@ function EventEditor({
             setConfirm(null);
           })
         }
+      />
+      <ConfirmDialog
+        open={monthToDelete !== null}
+        title={`Delete ${monthToDelete?.label ?? "month"} savings entry?`}
+        description="This removes both planned and actual savings for this month. This cannot be undone."
+        confirmLabel="Delete month"
+        onCancel={() => setMonthToDelete(null)}
+        onConfirm={async () => {
+          if (!monthToDelete) return;
+          edit({
+            ...draft,
+            savingsPlan: {
+              ...draft.savingsPlan,
+              months: draft.savingsPlan.months.filter(
+                (row) => row.month !== monthToDelete.month,
+              ),
+            },
+          });
+          setMonthToDelete(null);
+        }}
       />
     </div>
   );

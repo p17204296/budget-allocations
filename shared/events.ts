@@ -237,20 +237,26 @@ export function normalizeSavings(
     { startDate, startingFunding: convertFunding(draft, "total"), months: [] },
     draft.fundingDate,
   );
-  return rebalanceSavings({ ...draft, savingsPlan: plan }, startDate);
+  return rebalanceSavings({ ...draft, savingsPlan: plan }, startDate, today);
 }
-/** Spread the funding gap across eligible months, preserving history and actuals. */
+/** Spread the funding gap from the selected date, preserving recorded actuals. */
 export function rebalanceSavings(
   draft: EventDraft,
+  fromDate = draft.savingsPlan?.startDate ?? dateString(new Date()),
   today = dateString(new Date()),
 ): SavingsPlan {
   const plan = draft.savingsPlan;
   if (!plan) throw new Error("Initialize the savings plan before rebalancing.");
   const active = new Set(savingMonths(plan.startDate, draft.fundingDate));
   const remaining = plan.months.filter(
-    (row) => active.has(row.month) && row.month >= today.slice(0, 7),
+    (row) => active.has(row.month) && row.month >= fromDate.slice(0, 7),
   );
-  if (!remaining.length || draft.fundingDate < today) return plan;
+  if (
+    !remaining.length ||
+    draft.fundingDate < fromDate ||
+    draft.fundingDate < today
+  )
+    return plan;
   const factor = minorFactor(draft.currency);
   const gap = minor(calculateEvent(draft).gap, draft.currency);
   const base = Math.floor(gap / remaining.length);
@@ -258,7 +264,7 @@ export function rebalanceSavings(
   return {
     ...plan,
     months: plan.months.map((row) => {
-      if (!active.has(row.month) || row.month < today.slice(0, 7)) return row;
+      if (!active.has(row.month) || row.month < fromDate.slice(0, 7)) return row;
       const extra = remainder > 0 ? 1 : 0;
       remainder -= extra;
       return {
@@ -288,7 +294,7 @@ export function plannedFunding(draft: EventDraft): number {
   );
 }
 
-/** Compare money still needed with the amounts left to save in eligible months. */
+/** Compare money still needed with planned amounts from the selected start date. */
 export function savingsRebalanceSuggestion(
   draft: EventDraft,
   today = dateString(new Date()),
@@ -296,9 +302,7 @@ export function savingsRebalanceSuggestion(
   const plan = draft.savingsPlan;
   if (!plan || !draft.fundingDate || draft.fundingDate < today) return null;
   const active = new Set(savingMonths(plan.startDate, draft.fundingDate));
-  const remaining = plan.months.filter(
-    (row) => active.has(row.month) && row.month >= today.slice(0, 7),
-  );
+  const remaining = plan.months.filter((row) => active.has(row.month));
   if (!remaining.length) return null;
   const needed = minor(calculateEvent(draft).gap, draft.currency);
   const scheduled = remaining.reduce(
@@ -318,7 +322,6 @@ export function savingsRebalanceSuggestion(
     key: JSON.stringify([
       plan.startDate,
       draft.fundingDate,
-      today.slice(0, 7),
       draft.currency,
       needed,
       scheduled,
