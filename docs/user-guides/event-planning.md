@@ -32,7 +32,7 @@ The schedule includes both the start and deadline months, with full names and ye
 
 Edit **Planned savings** for each month to fit your circumstances, and update **Actually saved** as you go. Actual savings may exceed the plan. Planned amounts remain fixed when you record savings or change the budget, so you can compare your original intentions with your progress.
 
-When your remaining planned savings do not match what is still needed, the rebalance button is highlighted and a message explains the shortfall or optional reduction. This also catches missed contributions in past months. The current month is still available for saving, so an unfinished current-month contribution is not treated as missed.
+When planned savings from the selected start month through the deadline do not match what is still needed, the rebalance button is highlighted and a message explains the shortfall or optional reduction. The selected start month defines this comparison even when it is earlier than today.
 
 Choose **Keep my plan** to decline the suggestion without changing your figures. The same suggestion stays dismissed in that browser tab, including after a reload. A materially different shortfall, surplus or date range can prompt again. You can still rebalance manually at any time before the deadline. No suggestion is shown while inputs are incomplete or after the deadline.
 

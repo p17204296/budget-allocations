@@ -316,13 +316,32 @@ describe("rebalance suggestions", () => {
       },
     };
   }
-  it("detects a missed past contribution even when the original forecast covers the target", () => {
+  it("uses the selected start month for suggestions and clears after rebalancing", () => {
     const draft = value();
-    expect(plannedFunding(draft)).toBe(900);
+    if (!draft.savingsPlan) throw new Error("Expected a savings plan.");
+    draft.savingsPlan.months[1] = {
+      ...draft.savingsPlan.months[1],
+      planned: 250,
+    };
+    draft.savingsPlan.months[2] = {
+      ...draft.savingsPlan.months[2],
+      planned: 250,
+    };
     expect(savingsRebalanceSuggestion(draft, "2027-02-01")).toMatchObject({
       kind: "shortfall",
-      amount: 200,
+      amount: 100,
     });
+    const rebalanced = rebalanceSavings(
+      draft,
+      draft.savingsPlan.startDate,
+      "2027-02-01",
+    );
+    expect(
+      savingsRebalanceSuggestion(
+        { ...draft, savingsPlan: rebalanced },
+        "2027-02-01",
+      ),
+    ).toBeNull();
   });
   it("does not treat an unfinished current month as missed", () => {
     expect(savingsRebalanceSuggestion(value(), "2027-01-20")).toBeNull();
@@ -338,6 +357,11 @@ describe("rebalance suggestions", () => {
   });
   it("clears after rebalancing, ignores unrelated edits, and stops after the deadline", () => {
     const draft = value();
+    if (!draft.savingsPlan) throw new Error("Expected a savings plan.");
+    draft.savingsPlan.months[1] = {
+      ...draft.savingsPlan.months[1],
+      planned: 250,
+    };
     const recommendation = savingsRebalanceSuggestion(draft, "2027-02-01");
     expect(
       savingsRebalanceSuggestion(
@@ -347,7 +371,14 @@ describe("rebalance suggestions", () => {
     ).toEqual(recommendation);
     expect(
       savingsRebalanceSuggestion(
-        { ...draft, savingsPlan: rebalanceSavings(draft, "2027-02-01") },
+        {
+          ...draft,
+          savingsPlan: rebalanceSavings(
+            draft,
+            draft.savingsPlan.startDate,
+            "2027-02-01",
+          ),
+        },
         "2027-02-01",
       ),
     ).toBeNull();

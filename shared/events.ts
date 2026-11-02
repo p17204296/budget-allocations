@@ -294,7 +294,7 @@ export function plannedFunding(draft: EventDraft): number {
   );
 }
 
-/** Compare money still needed with the amounts left to save in eligible months. */
+/** Compare money still needed with planned amounts from the selected start date. */
 export function savingsRebalanceSuggestion(
   draft: EventDraft,
   today = dateString(new Date()),
@@ -302,9 +302,7 @@ export function savingsRebalanceSuggestion(
   const plan = draft.savingsPlan;
   if (!plan || !draft.fundingDate || draft.fundingDate < today) return null;
   const active = new Set(savingMonths(plan.startDate, draft.fundingDate));
-  const remaining = plan.months.filter(
-    (row) => active.has(row.month) && row.month >= today.slice(0, 7),
-  );
+  const remaining = plan.months.filter((row) => active.has(row.month));
   if (!remaining.length) return null;
   const needed = minor(calculateEvent(draft).gap, draft.currency);
   const scheduled = remaining.reduce(
@@ -324,7 +322,6 @@ export function savingsRebalanceSuggestion(
     key: JSON.stringify([
       plan.startDate,
       draft.fundingDate,
-      today.slice(0, 7),
       draft.currency,
       needed,
       scheduled,
