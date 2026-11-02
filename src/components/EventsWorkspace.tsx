@@ -981,7 +981,9 @@ function EventEditor({
                 </strong>
                 <p>
                   {suggestion.kind === "shortfall"
-                    ? `Your remaining planned savings fall ${money(suggestion.amount, draft.currency)} short of what’s still needed. Rebalance to spread the difference across the remaining months.`
+                    ? draft.savingsPlan.startDate.slice(0, 7) < today.slice(0, 7)
+                      ? `Your remaining planned savings fall ${money(suggestion.amount, draft.currency)} short of what’s still needed. This can include planned contributions from past months. Rebalance spreads the gap from your selected start month; adjust current or future planned amounts if you need to catch up by the deadline.`
+                      : `Your remaining planned savings fall ${money(suggestion.amount, draft.currency)} short of what’s still needed. Rebalance to spread the difference across the remaining months.`
                     : `Your remaining planned savings are ${money(suggestion.amount, draft.currency)} above what’s still needed. Rebalance if you’d like to lower them.`}
                 </p>
                 <p>

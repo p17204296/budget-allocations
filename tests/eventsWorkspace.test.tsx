@@ -294,6 +294,12 @@ describe("event editor", () => {
     fireEvent.change(screen.getByLabelText("Event date (optional)"), {
       target: { value: "2027-03-10" },
     });
+    fireEvent.change(screen.getByLabelText("Total budget"), {
+      target: { value: "1300" },
+    });
+    expect(
+      screen.getByText(/This can include planned contributions from past months/),
+    ).toBeTruthy();
 
     fireEvent.click(
       screen.getByRole("button", { name: "Rebalance remaining months" }),
