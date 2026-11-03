@@ -446,6 +446,23 @@ describe("event editor", () => {
         .hasAttribute("disabled"),
     ).toBe(true);
   });
+  it("blocks rebalance and saving for negative planned or actual savings", async () => {
+    await open();
+    fireEvent.change(screen.getByLabelText("Event date (optional)"), {
+      target: { value: "2027-01-01" },
+    });
+    for (const field of ["Planned savings — January 2027", "Actually saved — January 2027"]) {
+      fireEvent.change(screen.getByLabelText(field), {
+        target: { value: "-1" },
+      });
+      expect(screen.getByRole("button", { name: "Rebalance remaining months" }).hasAttribute("disabled")).toBe(true);
+      expect(screen.getByRole("button", { name: "Save changes" }).hasAttribute("disabled")).toBe(true);
+      fireEvent.change(screen.getByLabelText(field), {
+        target: { value: "0" },
+      });
+    }
+    expect(screen.getByRole("button", { name: "Rebalance remaining months" }).hasAttribute("disabled")).toBe(false);
+  });
   it("allows payments above expected cost without requiring matching funding", async () => {
     await open();
     fireEvent.change(screen.getByLabelText("Expected cost"), {

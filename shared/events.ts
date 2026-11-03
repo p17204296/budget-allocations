@@ -284,6 +284,7 @@ export function rebalanceSavings(
         const position = activeMonths.indexOf(row.month);
         if (
           position >= 0 &&
+          row.month >= fromDate.slice(0, 7) &&
           row.month < today.slice(0, 7) &&
           minor(row.planned, draft.currency) === 0 &&
           minor(row.actual, draft.currency) === 0
