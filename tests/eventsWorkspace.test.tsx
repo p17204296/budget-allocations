@@ -286,7 +286,7 @@ describe("event editor", () => {
         .getAttribute("value"),
     ).toBe("0");
   });
-  it("rebalances future months without adding targets to past months", async () => {
+  it("fills zero historical targets while keeping missed savings due in future months", async () => {
     await open();
     fireEvent.change(screen.getByLabelText("Start saving from"), {
       target: { value: "2026-01-01" },
@@ -311,14 +311,14 @@ describe("event editor", () => {
           .getByLabelText("Planned savings — January 2026")
           .getAttribute("value"),
       ),
-    ).toBe(0);
+    ).toBeGreaterThan(0);
     expect(
       Number(
         screen
           .getByLabelText("Planned savings — September 2026")
           .getAttribute("value"),
       ),
-    ).toBe(0);
+    ).toBeGreaterThan(0);
     expect(
       Number(
         screen

@@ -1009,7 +1009,7 @@ function EventEditor({
                 <p>
                   {suggestion.kind === "shortfall"
                     ? draft.savingsPlan.startDate.slice(0, 7) < today.slice(0, 7)
-                      ? `Your remaining planned savings fall ${money(suggestion.amount, draft.currency)} short of what’s still needed. Rebalance spreads the gap over current and future months; past targets and recorded savings stay as they are.`
+                      ? `Your remaining planned savings fall ${money(suggestion.amount, draft.currency)} short of what’s still needed. Rebalance spreads the gap over current and future months. Existing past targets and recorded savings stay as they are; zero past targets can be filled in.`
                       : `Your remaining planned savings fall ${money(suggestion.amount, draft.currency)} short of what’s still needed. Rebalance to spread the difference across the remaining months.`
                     : `Your remaining planned savings are ${money(suggestion.amount, draft.currency)} above what’s still needed. Rebalance if you’d like to lower them.`}
                 </p>

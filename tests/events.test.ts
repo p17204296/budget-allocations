@@ -263,6 +263,30 @@ describe("monthly savings plans", () => {
       ).toBe(1500);
     }
   });
+  it("fills a zero past target while keeping its missed savings due later", () => {
+    const value: EventDraft = {
+      ...draft(),
+      budget: 2230,
+      fundingDate: "2026-12-18",
+      items: [],
+      savingsPlan: {
+        startDate: "2026-10-21",
+        startingFunding: 0,
+        months: [
+          { month: "2026-10", planned: 0, actual: 0 },
+          { month: "2026-11", planned: 1115, actual: 0 },
+          { month: "2026-12", planned: 1115, actual: 0 },
+        ],
+      },
+    };
+    const balanced = rebalanceSavings(value, "2026-10-21", "2026-11-03");
+    expect(balanced.months.map((row) => row.planned)).toEqual([
+      743.34,
+      1115,
+      1115,
+    ]);
+    expect(plannedFunding({ ...value, savingsPlan: balanced }, "2026-11-03")).toBe(2230);
+  });
   it("preserves history and actuals while rebalancing only remaining months", () => {
     const value = {
       ...plan(100),
