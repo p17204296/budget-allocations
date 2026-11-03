@@ -286,7 +286,7 @@ describe("event editor", () => {
         .getAttribute("value"),
     ).toBe("0");
   });
-  it("rebalances from the selected savings start date, including past months", async () => {
+  it("rebalances future months without adding targets to past months", async () => {
     await open();
     fireEvent.change(screen.getByLabelText("Start saving from"), {
       target: { value: "2026-01-01" },
@@ -298,7 +298,7 @@ describe("event editor", () => {
       target: { value: "1300" },
     });
     expect(
-      screen.getByText(/This can include planned contributions from past months/),
+      screen.getByText(/Rebalance spreads the gap over current and future months/),
     ).toBeTruthy();
 
     fireEvent.click(
@@ -311,11 +311,18 @@ describe("event editor", () => {
           .getByLabelText("Planned savings — January 2026")
           .getAttribute("value"),
       ),
-    ).toBeGreaterThan(0);
+    ).toBe(0);
     expect(
       Number(
         screen
           .getByLabelText("Planned savings — September 2026")
+          .getAttribute("value"),
+      ),
+    ).toBe(0);
+    expect(
+      Number(
+        screen
+          .getByLabelText("Planned savings — November 2026")
           .getAttribute("value"),
       ),
     ).toBeGreaterThan(0);
