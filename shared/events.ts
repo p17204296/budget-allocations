@@ -250,7 +250,8 @@ export function rebalanceSavings(
 ): SavingsPlan {
   const plan = draft.savingsPlan;
   if (!plan) throw new Error("Initialize the savings plan before rebalancing.");
-  const active = new Set(savingMonths(plan.startDate, draft.fundingDate));
+  const activeMonths = savingMonths(plan.startDate, draft.fundingDate);
+  const active = new Set(activeMonths);
   const remaining = plan.months.filter(
     (row) =>
       active.has(row.month) &&
@@ -269,10 +270,31 @@ export function rebalanceSavings(
   const gap = minor(calculateEvent(draft).gap, draft.currency);
   const base = Math.floor(gap / remaining.length);
   let remainder = gap % remaining.length;
+  const initialTarget = Math.max(
+    0,
+    minor(calculateEvent(draft).target, draft.currency) -
+      minor(plan.startingFunding, draft.currency),
+  );
+  const initialBase = Math.floor(initialTarget / activeMonths.length);
+  const initialRemainder = initialTarget % activeMonths.length;
   return {
     ...plan,
     months: plan.months.map((row) => {
-      if (!remainingMonths.has(row.month)) return row;
+      if (!remainingMonths.has(row.month)) {
+        const position = activeMonths.indexOf(row.month);
+        if (
+          position >= 0 &&
+          row.month >= fromDate.slice(0, 7) &&
+          row.month < today.slice(0, 7) &&
+          minor(row.planned, draft.currency) === 0 &&
+          minor(row.actual, draft.currency) === 0
+        )
+          return {
+            ...row,
+            planned: (initialBase + (position < initialRemainder ? 1 : 0)) / factor,
+          };
+        return row;
+      }
       const extra = remainder > 0 ? 1 : 0;
       remainder -= extra;
       return {

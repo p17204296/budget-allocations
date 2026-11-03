@@ -286,7 +286,7 @@ describe("event editor", () => {
         .getAttribute("value"),
     ).toBe("0");
   });
-  it("rebalances future months without adding targets to past months", async () => {
+  it("fills zero historical targets while keeping missed savings due in future months", async () => {
     await open();
     fireEvent.change(screen.getByLabelText("Start saving from"), {
       target: { value: "2026-01-01" },
@@ -311,14 +311,14 @@ describe("event editor", () => {
           .getByLabelText("Planned savings — January 2026")
           .getAttribute("value"),
       ),
-    ).toBe(0);
+    ).toBeGreaterThan(0);
     expect(
       Number(
         screen
           .getByLabelText("Planned savings — September 2026")
           .getAttribute("value"),
       ),
-    ).toBe(0);
+    ).toBeGreaterThan(0);
     expect(
       Number(
         screen
@@ -445,6 +445,23 @@ describe("event editor", () => {
         .getByRole("button", { name: "Save changes" })
         .hasAttribute("disabled"),
     ).toBe(true);
+  });
+  it("blocks rebalance and saving for negative planned or actual savings", async () => {
+    await open();
+    fireEvent.change(screen.getByLabelText("Event date (optional)"), {
+      target: { value: "2027-01-01" },
+    });
+    for (const field of ["Planned savings — January 2027", "Actually saved — January 2027"]) {
+      fireEvent.change(screen.getByLabelText(field), {
+        target: { value: "-1" },
+      });
+      expect(screen.getByRole("button", { name: "Rebalance remaining months" }).hasAttribute("disabled")).toBe(true);
+      expect(screen.getByRole("button", { name: "Save changes" }).hasAttribute("disabled")).toBe(true);
+      fireEvent.change(screen.getByLabelText(field), {
+        target: { value: "0" },
+      });
+    }
+    expect(screen.getByRole("button", { name: "Rebalance remaining months" }).hasAttribute("disabled")).toBe(false);
   });
   it("allows payments above expected cost without requiring matching funding", async () => {
     await open();

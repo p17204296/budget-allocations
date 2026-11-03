@@ -263,6 +263,76 @@ describe("monthly savings plans", () => {
       ).toBe(1500);
     }
   });
+  it("fills a zero past target while keeping its missed savings due later", () => {
+    const value: EventDraft = {
+      ...draft(),
+      budget: 2230,
+      fundingDate: "2026-12-18",
+      items: [],
+      savingsPlan: {
+        startDate: "2026-10-21",
+        startingFunding: 0,
+        months: [
+          { month: "2026-10", planned: 0, actual: 0 },
+          { month: "2026-11", planned: 1115, actual: 0 },
+          { month: "2026-12", planned: 1115, actual: 0 },
+        ],
+      },
+    };
+    const balanced = rebalanceSavings(value, "2026-10-21", "2026-11-03");
+    expect(balanced.months.map((row) => row.planned)).toEqual([
+      743.34,
+      1115,
+      1115,
+    ]);
+    expect(plannedFunding({ ...value, savingsPlan: balanced }, "2026-11-03")).toBe(2230);
+  });
+  it.each([
+    { name: "nothing saved", target: 2230, starting: 0, actual: 0, october: 743.34, later: [1115, 1115] },
+    { name: "some savings", target: 2230, starting: 0, actual: 852, october: 500, later: [689, 689] },
+    { name: "starting funding", target: 2230, starting: 1000, actual: 0, october: 410, later: [615, 615] },
+    { name: "fully funded", target: 2230, starting: 0, actual: 2230, october: 500, later: [0, 0] },
+    { name: "overfunded", target: 2230, starting: 0, actual: 3000, october: 500, later: [0, 0] },
+    { name: "penny rounding", target: 0.01, starting: 0, actual: 0, october: 0.01, later: [0.01, 0] },
+  ])("rebalances $name without counting a past target as funding", ({ target, starting, actual, october, later }) => {
+    const value: EventDraft = {
+      ...draft(),
+      budget: target,
+      fundingDate: "2026-12-18",
+      items: [],
+      savingsPlan: {
+        startDate: "2026-10-21",
+        startingFunding: starting,
+        months: [
+          { month: "2026-10", planned: actual ? 500 : 0, actual },
+          { month: "2026-11", planned: 0, actual: 0 },
+          { month: "2026-12", planned: 0, actual: 0 },
+        ],
+      },
+    };
+    const balanced = rebalanceSavings(value, "2026-10-21", "2026-11-03");
+    expect(balanced.months.map((row) => row.planned)).toEqual([october, ...later]);
+    expect(plannedFunding({ ...value, savingsPlan: balanced }, "2026-11-03")).toBe(Math.max(target, starting + actual));
+    expect(rebalanceSavings(value, "2026-10-21", "2026-12-19")).toEqual(value.savingsPlan);
+  });
+  it("leaves months before a later rebalance start unchanged", () => {
+    const value: EventDraft = {
+      ...draft(),
+      budget: 600,
+      fundingDate: "2026-12-18",
+      items: [],
+      savingsPlan: {
+        startDate: "2026-10-21",
+        startingFunding: 0,
+        months: [
+          { month: "2026-10", planned: 0, actual: 0 },
+          { month: "2026-11", planned: 0, actual: 0 },
+          { month: "2026-12", planned: 0, actual: 0 },
+        ],
+      },
+    };
+    expect(rebalanceSavings(value, "2026-12-01", "2026-11-03").months.map((row) => row.planned)).toEqual([0, 0, 600]);
+  });
   it("preserves history and actuals while rebalancing only remaining months", () => {
     const value = {
       ...plan(100),
@@ -334,6 +404,7 @@ describe("monthly savings plans", () => {
     for (const row of [
       { month: "2027-13", planned: 0, actual: 0 },
       { month: "2027-01", planned: -1, actual: 0 },
+      { month: "2027-01", planned: 0, actual: -1 },
       { month: "2027-01", planned: 0, actual: 0.001 },
     ]) {
       expect(

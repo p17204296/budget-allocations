@@ -178,6 +178,30 @@ describe("event persistence", () => {
     ).rejects.toThrow("Reload");
     expect((await owner.query(api.events.get, { id }))?.draft).toEqual(draft);
   });
+  it("rejects negative savings amounts at the save boundary", async () => {
+    const { owner, id, detail } = await setup();
+    const plan = detail.draft.savingsPlan;
+    if (!plan) throw new Error("Missing savings plan");
+    const base = {
+      ...detail.draft,
+      fundingDate: "2027-01-18",
+      savingsPlan: {
+        ...plan,
+        months: [{ month: "2027-01", planned: 100, actual: 0 }],
+      },
+    };
+    for (const draft of [
+      { ...base, budget: -1 },
+      { ...base, savingsPlan: { ...base.savingsPlan, startingFunding: -1 } },
+      { ...base, savingsPlan: { ...base.savingsPlan, months: [{ month: "2027-01", planned: -1, actual: 0 }] } },
+      { ...base, savingsPlan: { ...base.savingsPlan, months: [{ month: "2027-01", planned: 100, actual: -1 }] } },
+    ]) {
+      await expect(
+        owner.mutation(api.events.save, { id, expectedRevision: 0, draft }),
+      ).rejects.toThrow();
+    }
+    expect((await owner.query(api.events.get, { id }))?.event.revision).toBe(0);
+  });
   it("loads legacy events and preserves their funding gap when the new schedule is saved", async () => {
     const { t, owner, id, detail } = await setup();
     await t.run((ctx) =>
