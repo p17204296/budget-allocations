@@ -432,6 +432,60 @@ describe("event editor", () => {
         .hasAttribute("disabled"),
     ).toBe(true);
   });
+  it("allows payments above expected cost without requiring matching funding", async () => {
+    await open();
+    fireEvent.change(screen.getByLabelText("Expected cost"), {
+      target: { value: "100" },
+    });
+    fireEvent.change(screen.getByLabelText("Amount paid"), {
+      target: { value: "150" },
+    });
+    expect(screen.getByText("Over expected cost")).toBeTruthy();
+    expect(screen.getAllByText("£50.00").length).toBeGreaterThan(0);
+    expect(
+      screen.queryByText(/payments exceed the funding entered/i),
+    ).toBeNull();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    });
+    expect(mock.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        draft: expect.objectContaining({
+          items: [expect.objectContaining({ cost: 100, paid: 150 })],
+        }),
+      }),
+    );
+  });
+  it("shows a non-blocking payment warning only when tracking against savings is enabled", async () => {
+    if (!mock.state.detail) throw new Error("Missing event fixture");
+    mock.state.detail.draft.savingsPlan = {
+      startDate: "2026-11-03",
+      startingFunding: 0,
+      months: [],
+    };
+    mock.state.detail.draft.fundingMode = "total";
+    mock.state.detail.draft.fundingAmount = 0;
+    await open();
+    expect(
+      screen.queryByText(/Recorded payments exceed savings tracked/i),
+    ).toBeNull();
+    fireEvent.click(
+      screen.getByLabelText("Track payments against these savings"),
+    );
+    expect(
+      screen.getByText(
+        "Recorded payments exceed savings tracked for this event by £100.00. Check your starting funding and actual savings. You can still save this plan.",
+      ),
+    ).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    });
+    expect(mock.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        draft: expect.objectContaining({ trackPaymentsAgainstSavings: true }),
+      }),
+    );
+  });
   it("keeps migrated starting funding valid and can save unrelated notes", async () => {
     if (!mock.state.detail) throw new Error("Missing legacy fixture");
     mock.state.detail.draft.fundingAmount = 1_000_000_000;

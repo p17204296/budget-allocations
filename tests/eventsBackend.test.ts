@@ -28,6 +28,7 @@ describe("event persistence", () => {
     const draft = {
       ...detail.draft,
       budget: 1000,
+      trackPaymentsAgainstSavings: true,
       items: [{ key: "hotel", name: "Hotel", cost: 800, paid: 200 }],
     };
     await expect(
@@ -43,12 +44,12 @@ describe("event persistence", () => {
         expectedRevision: 1,
         draft: {
           ...draft,
-          items: [{ key: "bad", name: "Bad", cost: 10, paid: 11 }],
+          items: [{ key: "overrun", name: "Hotel overrun", cost: 10, paid: 11 }],
         },
       }),
-    ).rejects.toThrow("exceed");
-    expect((await owner.query(api.events.get, { id }))?.draft).toEqual(draft);
-    await owner.mutation(api.events.remove, { id, expectedRevision: 1 });
+    ).resolves.toBe(2);
+    expect((await owner.query(api.events.get, { id }))?.draft.items[0]).toMatchObject({ cost: 10, paid: 11 });
+    await owner.mutation(api.events.remove, { id, expectedRevision: 2 });
     expect(await owner.query(api.events.get, { id })).toBeNull();
   });
   it("isolates users for every endpoint and rejects anonymous requests", async () => {

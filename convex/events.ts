@@ -82,6 +82,7 @@ export const get = query({
       fundingMode,
       fundingAmount,
       savingsPlan,
+      trackPaymentsAgainstSavings,
       notes,
     } = event;
     return {
@@ -96,6 +97,7 @@ export const get = query({
         fundingMode,
         fundingAmount,
         savingsPlan,
+        trackPaymentsAgainstSavings,
         notes,
         items: (await items(ctx, id)).map(({ key, name, cost, paid }) => ({
           key,
@@ -133,6 +135,7 @@ export const create = mutation({
       fundingDateIndependent: false,
       fundingMode: "available",
       fundingAmount: 0,
+      trackPaymentsAgainstSavings: false,
       items: [],
     };
     const error = eventError(draft);

@@ -12,11 +12,13 @@ The summary shows your budget, total item costs, paid, still to pay, and budget 
 
 The funding target is the higher of your budget or your item costs. This preserves any room in your budget while allowing you to see the money required if your plans grow.
 
-**Already funded before this plan** is money already committed to the event, including payments already made. You can start with zero, a small amount, or the entire target. Don’t include savings you enter in the monthly rows in this starting amount as well.
+**Already funded before this plan** is money set aside for the event before the savings schedule starts. You can start with zero, a small amount, or the entire target. Don’t include savings you enter in the monthly rows in this starting amount as well. Payments are tracked separately by default.
 
-For example, a £1,200 target, £200 paid and £300 still set aside means starting funding of £500. Another £700 needs to be saved. Recording a payment does not subtract it from the funding target again. If recorded payments exceed recorded funding, a reminder asks you to check your figures; you can still save the plan.
+For example, with a £1,200 target and £300 set aside, £900 remains in the savings plan whether you have paid £200 toward the event or not. A payment updates the event’s paid and remaining-to-pay figures, separately from savings progress. Payments may exceed an item’s expected cost; the overage is shown and does not prevent saving.
 
-**Actually saved** records additional money committed during each month. The starting funding plus all actual monthly savings is your total funding recorded. The amount still needed is the target minus that total, with a minimum of zero. When funding reaches or exceeds the target, the event is **Fully funded**.
+Turn on **Track payments against these savings** if event payments should come from the savings recorded in this plan. The app then shows a non-blocking warning when recorded payments exceed starting funding plus actual savings. Leave it off when payments can come from other sources.
+
+**Actually saved** records additional money set aside during each month. The starting funding plus all actual monthly savings is your total funding recorded. The amount still needed is the target minus that total, with a minimum of zero. When funding reaches or exceeds the target, the savings plan is **Fully funded**. This tracks savings progress; payments are tracked separately and do not change the savings amount still needed.
 
 All figures are maintained manually. Recording funding, savings or payments does not transfer money or update account balances. These plans remain separate from monthly allocations.
 
@@ -52,7 +54,7 @@ Use **Event notes** for booking details, ideas and reminders. Notes are optional
 
 A [floating save prompt](saving-changes.md) appears after edits and stays available while you scroll. **Save now** saves immediately; the inline save button remains available too.
 
-Valid changes autosave six seconds after your last edit. **Save changes** saves immediately. Blank amounts do not become zero. Amount paid cannot exceed cost. Complete any invalid inputs before saving.
+Valid changes autosave six seconds after your last edit. **Save changes** saves immediately. Blank amounts do not become zero. Payments may exceed expected costs; overages are shown in the item and event summary. Complete any invalid inputs before saving.
 
 Failed saves retain your draft and offer **Retry save**. Navigation waits for edits to save; fix incomplete fields or explicitly discard them before leaving. Browser close/refresh warnings protect unsaved edits where supported.
 
