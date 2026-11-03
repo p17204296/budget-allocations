@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   calculateEvent,
   MAX_STARTING_FUNDING,
@@ -155,6 +155,11 @@ describe("event calculations", () => {
 });
 
 describe("monthly savings plans", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2027, 0, 1));
+  });
+  afterEach(() => vi.useRealTimers());
   function plan(startingFunding = 0): EventDraft {
     return {
       ...draft(),

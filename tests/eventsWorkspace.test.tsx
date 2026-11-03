@@ -322,6 +322,13 @@ describe("event editor", () => {
     expect(
       Number(
         screen
+          .getByLabelText("Planned savings — October 2026")
+          .getAttribute("value"),
+      ),
+    ).toBeGreaterThan(0);
+    expect(
+      Number(
+        screen
           .getByLabelText("Planned savings — November 2026")
           .getAttribute("value"),
       ),

@@ -42,7 +42,7 @@ Choose **Keep my plan** to decline the suggestion without changing your figures.
 
 Changing dates preserves overlapping entries and adds new months with zero amounts. Months excluded by the new dates appear under **Outside current schedule**. Their actual savings still count toward funding; their planned amounts are excluded from the active forecast. Use the remove button to delete an outside month and both of its amounts; this cannot be undone. If the schedule later includes that month again, it is added with zero amounts. Rebalance when you want suggestions for the revised dates.
 
-The **Planned funding** forecast combines starting funding, recorded savings, and planned amounts for months still ahead. It shows whether those amounts cover the target. This is separate from the actual funding total.
+The **Planned funding** forecast combines starting funding, recorded savings, and planned amounts for active current and future months with no recorded savings. It shows whether those amounts cover the target. This is separate from the actual funding total.
 
 Schedules support up to 1,200 retained monthly entries, including entries outside the current date range.
 
