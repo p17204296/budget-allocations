@@ -34,15 +34,15 @@ The schedule includes both the start and deadline months, with full names and ye
 
 Edit **Planned savings** for each month to fit your circumstances, and update **Actually saved** as you go. Actual savings may exceed the plan. Planned amounts remain fixed when you record savings or change the budget, so you can compare your original intentions with your progress.
 
-When planned savings from the selected start month through the deadline do not match what is still needed, the rebalance button is highlighted and a message explains the shortfall or optional reduction. The selected start month defines this comparison even when it is earlier than today. A shortfall can include planned contributions assigned to past months; adjust current or future planned amounts if you need to catch up by the deadline.
+When planned savings in current and future months without recorded savings do not match what is still needed, the rebalance button is highlighted and a message explains the shortfall or optional reduction. Past months and months with recorded savings keep their original targets, so any difference between planned and actual savings is carried into the remaining months.
 
 Choose **Keep my plan** to decline the suggestion without changing your figures. The same suggestion stays dismissed in that browser tab, including after a reload. A materially different shortfall, surplus or date range can prompt again. You can still rebalance manually at any time before the deadline. No suggestion is shown while inputs are incomplete or after the deadline.
 
-**Rebalance remaining months** spreads the remaining funding requirement across the selected start month through the deadline, even when the start date is earlier than today. It leaves months before the selected start date unchanged and preserves every actual entry. Money already saved in an included month is added to that month’s new planned total. The action is unavailable after the deadline; any remaining funding is then needed now.
+**Rebalance remaining months** spreads the remaining funding requirement across current and future months that have no recorded savings. It preserves past targets and every actual entry. If you saved more or less than planned in a month, the difference changes the targets for the months still ahead. The action is unavailable after the deadline; any remaining funding is then needed now.
 
 Changing dates preserves overlapping entries and adds new months with zero amounts. Months excluded by the new dates appear under **Outside current schedule**. Their actual savings still count toward funding; their planned amounts are excluded from the active forecast. Use the remove button to delete an outside month and both of its amounts; this cannot be undone. If the schedule later includes that month again, it is added with zero amounts. Rebalance when you want suggestions for the revised dates.
 
-The **Planned funding** forecast combines starting funding, planned savings in the current schedule and actual savings outside it. It shows whether the planned amounts cover the target. This is separate from the actual funding total and does not change automatically after a missed contribution.
+The **Planned funding** forecast combines starting funding, recorded savings, and planned amounts for active current and future months with no recorded savings. It shows whether those amounts cover the target. This is separate from the actual funding total.
 
 Schedules support up to 1,200 retained monthly entries, including entries outside the current date range.
 

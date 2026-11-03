@@ -1009,7 +1009,7 @@ function EventEditor({
                 <p>
                   {suggestion.kind === "shortfall"
                     ? draft.savingsPlan.startDate.slice(0, 7) < today.slice(0, 7)
-                      ? `Your remaining planned savings fall ${money(suggestion.amount, draft.currency)} short of what’s still needed. This can include planned contributions from past months. Rebalance spreads the gap from your selected start month; adjust current or future planned amounts if you need to catch up by the deadline.`
+                      ? `Your remaining planned savings fall ${money(suggestion.amount, draft.currency)} short of what’s still needed. Rebalance spreads the gap over current and future months; past targets and recorded savings stay as they are.`
                       : `Your remaining planned savings fall ${money(suggestion.amount, draft.currency)} short of what’s still needed. Rebalance to spread the difference across the remaining months.`
                     : `Your remaining planned savings are ${money(suggestion.amount, draft.currency)} above what’s still needed. Rebalance if you’d like to lower them.`}
                 </p>
@@ -1125,17 +1125,17 @@ function EventEditor({
             <div className="event-savings-forecast">
               <strong>
                 Planned funding:{" "}
-                {money(plannedFunding(parsed.draft), draft.currency)}
+                {money(plannedFunding(parsed.draft, today), draft.currency)}
               </strong>
               <span>
-                {plannedFunding(parsed.draft) >= result.target
+                {plannedFunding(parsed.draft, today) >= result.target
                   ? "Your plan covers the target."
-                  : `${money(result.target - plannedFunding(parsed.draft), draft.currency)} more needs to be planned.`}
+                  : `${money(result.target - plannedFunding(parsed.draft, today), draft.currency)} more needs to be planned.`}
               </span>
               <p className="event-help">
-                This forecast combines starting funding and planned savings in
-                the current schedule, plus actual savings outside it. It is
-                separate from money actually funded.
+                This forecast combines starting funding, recorded savings, and
+                planned amounts for months still ahead. It is separate from
+                money actually funded.
               </p>
             </div>
           ) : null}
