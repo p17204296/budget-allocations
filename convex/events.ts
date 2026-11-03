@@ -13,6 +13,7 @@ import {
   eventError,
   MAX_EVENTS,
   MAX_EVENT_ITEMS,
+  normalizeSavings,
   type EventDraft,
 } from "../shared/events";
 
@@ -126,7 +127,7 @@ export const create = mutation({
       .query("userSettings")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
-    const draft: EventDraft = {
+    const initialDraft: EventDraft = {
       name: name.trim(),
       currency: settings?.currency ?? "GBP",
       budget: 0,
@@ -137,6 +138,10 @@ export const create = mutation({
       fundingAmount: 0,
       trackPaymentsAgainstSavings: false,
       items: [],
+    };
+    const draft: EventDraft = {
+      ...initialDraft,
+      savingsPlan: normalizeSavings(initialDraft),
     };
     const error = eventError(draft);
     if (error) throw new ConvexError(error);

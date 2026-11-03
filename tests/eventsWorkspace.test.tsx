@@ -489,6 +489,7 @@ describe("event editor", () => {
   it("keeps migrated starting funding valid and can save unrelated notes", async () => {
     if (!mock.state.detail) throw new Error("Missing legacy fixture");
     mock.state.detail.draft.fundingAmount = 1_000_000_000;
+    mock.state.detail.draft.savingsPlan = undefined;
     await open();
     const funding = screen.getByLabelText("Already funded before this plan");
     expect(funding.getAttribute("value")).toBe("1000000100");
