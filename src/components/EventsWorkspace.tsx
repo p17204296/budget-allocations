@@ -639,11 +639,15 @@ function EventEditor({
                     <dd>{money(result.paid, draft.currency)}</dd>
                   </div>
                   <div>
-                    <dt>
-                      {result.unpaid < 0 ? "Paid above item costs" : "Still to pay"}
-                    </dt>
-                    <dd>{money(Math.abs(result.unpaid), draft.currency)}</dd>
+                    <dt>Still to pay</dt>
+                    <dd>{money(result.unpaid, draft.currency)}</dd>
                   </div>
+                  {result.overpaid > 0 ? (
+                    <div>
+                      <dt>Paid above item costs</dt>
+                      <dd>{money(result.overpaid, draft.currency)}</dd>
+                    </div>
+                  ) : null}
                 </dl>
                 <div className="event-funding-result">
                   <span>

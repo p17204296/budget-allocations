@@ -6,7 +6,7 @@ Create an event, give it a total budget, and optionally add its date. Each item 
 
 **Add item** creates an item and takes you directly to its description. On mobile, a floating **+** button stays available as you scroll and performs the same action. It sits above the bottom navigation and moves above the save prompt when needed.
 
-The summary shows your budget, total item costs, paid, still to pay, and budget remaining or extra budget needed. Going over budget does not prevent saving your plan.
+The summary shows your budget, total item costs, paid, still to pay, overpayments above item costs, and budget remaining or extra budget needed. Each item’s unpaid amount and overpayment are calculated separately, so an overpayment on one item does not offset another item’s unpaid amount. Going over budget does not prevent saving your plan.
 
 ## Your savings plan
 

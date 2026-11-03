@@ -48,6 +48,21 @@ describe("event calculations", () => {
       gap: 900,
     });
   });
+  it("does not net one item’s overpayment against another item’s unpaid cost", () => {
+    const value = {
+      ...draft(),
+      items: [
+        { key: "overpaid", name: "Overpaid item", cost: 100, paid: 150 },
+        { key: "unpaid", name: "Unpaid item", cost: 100, paid: 0 },
+      ],
+    };
+    expect(calculateEvent(value)).toMatchObject({
+      total: 200,
+      paid: 150,
+      unpaid: 100,
+      overpaid: 50,
+    });
+  });
   it("converts funding modes without changing the gap", () => {
     const plan = draft();
     const total = {

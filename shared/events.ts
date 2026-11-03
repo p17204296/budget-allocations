@@ -125,6 +125,17 @@ export function calculateEvent(draft: EventDraft, today = new Date()) {
     (sum, item) => sum + minor(item.paid, draft.currency),
     0,
   );
+  const { unpaid, overpaid } = draft.items.reduce(
+    (totals, item) => {
+      const cost = minor(item.cost, draft.currency);
+      const itemPaid = minor(item.paid, draft.currency);
+      return {
+        unpaid: totals.unpaid + Math.max(0, cost - itemPaid),
+        overpaid: totals.overpaid + Math.max(0, itemPaid - cost),
+      };
+    },
+    { unpaid: 0, overpaid: 0 },
+  );
   const budget = minor(draft.budget, draft.currency);
   const startingFunding =
     draft.savingsPlan?.startingFunding ?? convertFunding(draft, "total");
@@ -147,7 +158,8 @@ export function calculateEvent(draft: EventDraft, today = new Date()) {
     budget: budget / factor,
     total: total / factor,
     paid: paid / factor,
-    unpaid: (total - paid) / factor,
+    unpaid: unpaid / factor,
+    overpaid: overpaid / factor,
     budgetDifference: (budget - total) / factor,
     target: target / factor,
     gap: gap / factor,
