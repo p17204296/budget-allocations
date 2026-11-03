@@ -20,6 +20,7 @@ export type SavingsPlan = {
 };
 export type EventDraft = {
   savingsPlan?: SavingsPlan;
+  trackPaymentsAgainstSavings?: boolean;
   notes?: string;
   name: string;
   currency: string;
@@ -91,19 +92,7 @@ export function eventError(draft: EventDraft): string | null {
       return "Give every item a name of 1–120 characters.";
     if (!validAmount(item.cost) || !validAmount(item.paid))
       return "Enter valid, non-negative item costs and payments.";
-    if (item.paid > item.cost)
-      return "Amount paid cannot exceed the item’s expected cost.";
   }
-  const paid = draft.items.reduce(
-    (sum, item) => sum + minor(item.paid, draft.currency),
-    0,
-  );
-  if (
-    !draft.savingsPlan &&
-    draft.fundingMode === "total" &&
-    minor(draft.fundingAmount, draft.currency) < paid
-  )
-    return "Total funded so far must cover the payments already recorded.";
   return null;
 }
 export function dateString(date: Date): string {
@@ -125,7 +114,7 @@ export function contributionCount(
   const lastContribution = new Date(endYear, endMonth, Math.min(day, lastDay));
   return monthDifference + (dateString(lastContribution) <= deadline ? 1 : 0);
 }
-/** Calculate in minor units; payments are already included in starting funding. */
+/** Calculate event costs, payments, and savings funding as separate totals. */
 export function calculateEvent(draft: EventDraft, today = new Date()) {
   const factor = minorFactor(draft.currency);
   const total = draft.items.reduce(
@@ -136,6 +125,17 @@ export function calculateEvent(draft: EventDraft, today = new Date()) {
     (sum, item) => sum + minor(item.paid, draft.currency),
     0,
   );
+  const { unpaid, overpaid } = draft.items.reduce(
+    (totals, item) => {
+      const cost = minor(item.cost, draft.currency);
+      const itemPaid = minor(item.paid, draft.currency);
+      return {
+        unpaid: totals.unpaid + Math.max(0, cost - itemPaid),
+        overpaid: totals.overpaid + Math.max(0, itemPaid - cost),
+      };
+    },
+    { unpaid: 0, overpaid: 0 },
+  );
   const budget = minor(draft.budget, draft.currency);
   const startingFunding =
     draft.savingsPlan?.startingFunding ?? convertFunding(draft, "total");
@@ -145,6 +145,8 @@ export function calculateEvent(draft: EventDraft, today = new Date()) {
       0,
     ) ?? 0;
   const funding = minor(startingFunding, draft.currency) + actual;
+  const paymentWarning =
+    (draft.trackPaymentsAgainstSavings ?? false) && paid > funding;
   const target = Math.max(budget, total);
   const gap = Math.max(0, target - funding);
   const contributions = contributionCount(draft.fundingDate, today);
@@ -152,11 +154,12 @@ export function calculateEvent(draft: EventDraft, today = new Date()) {
     startingFunding,
     actual: actual / factor,
     funded: funding / factor,
-    paymentWarning: paid > funding,
+    paymentWarning,
     budget: budget / factor,
     total: total / factor,
     paid: paid / factor,
-    unpaid: (total - paid) / factor,
+    unpaid: unpaid / factor,
+    overpaid: overpaid / factor,
     budgetDifference: (budget - total) / factor,
     target: target / factor,
     gap: gap / factor,

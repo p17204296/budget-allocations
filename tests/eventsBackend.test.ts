@@ -28,6 +28,7 @@ describe("event persistence", () => {
     const draft = {
       ...detail.draft,
       budget: 1000,
+      trackPaymentsAgainstSavings: true,
       items: [{ key: "hotel", name: "Hotel", cost: 800, paid: 200 }],
     };
     await expect(
@@ -43,13 +44,27 @@ describe("event persistence", () => {
         expectedRevision: 1,
         draft: {
           ...draft,
-          items: [{ key: "bad", name: "Bad", cost: 10, paid: 11 }],
+          items: [{ key: "overrun", name: "Hotel overrun", cost: 10, paid: 11 }],
         },
       }),
-    ).rejects.toThrow("exceed");
-    expect((await owner.query(api.events.get, { id }))?.draft).toEqual(draft);
-    await owner.mutation(api.events.remove, { id, expectedRevision: 1 });
+    ).resolves.toBe(2);
+    expect((await owner.query(api.events.get, { id }))?.draft.items[0]).toMatchObject({ cost: 10, paid: 11 });
+    await owner.mutation(api.events.remove, { id, expectedRevision: 2 });
     expect(await owner.query(api.events.get, { id })).toBeNull();
+  });
+  it("starts new events with savings separate from payments", async () => {
+    const { owner, id, detail } = await setup();
+    expect(detail.draft.savingsPlan?.startingFunding).toBe(0);
+    const draft = {
+      ...detail.draft,
+      trackPaymentsAgainstSavings: true,
+      items: [{ key: "deposit", name: "Deposit", cost: 100, paid: 150 }],
+    };
+    await owner.mutation(api.events.save, { id, expectedRevision: 0, draft });
+    const updated = await owner.query(api.events.get, { id });
+    if (!updated) throw new Error("Missing saved event");
+    expect(updated.draft.savingsPlan?.startingFunding).toBe(0);
+    expect(calculateEvent(updated.draft).paymentWarning).toBe(true);
   });
   it("isolates users for every endpoint and rejects anonymous requests", async () => {
     const { t, owner, other, id, detail } = await setup();
@@ -166,7 +181,11 @@ describe("event persistence", () => {
   it("loads legacy events and preserves their funding gap when the new schedule is saved", async () => {
     const { t, owner, id, detail } = await setup();
     await t.run((ctx) =>
-      ctx.db.patch(id, { budget: 1000, fundingAmount: 200 }),
+      ctx.db.patch(id, {
+        budget: 1000,
+        fundingAmount: 200,
+        savingsPlan: undefined,
+      }),
     );
     const legacy = await owner.query(api.events.get, { id });
     if (!legacy) throw new Error("Missing event");
@@ -188,10 +207,12 @@ describe("event persistence", () => {
     expect(updated.draft.savingsPlan?.startingFunding).toBe(200);
   });
   it("saves a migrated aggregate above the legacy field cap without reducing funding", async () => {
-    const { owner, id, detail } = await setup();
+    const { t, owner, id, detail } = await setup();
+    await t.run((ctx) => ctx.db.patch(id, { savingsPlan: undefined }));
     const legacy = {
       ...detail.draft,
       fundingAmount: 1_000_000_000,
+      savingsPlan: undefined,
       items: [{ key: "deposit", name: "Deposit", cost: 100, paid: 100 }],
     };
     await owner.mutation(api.events.save, {

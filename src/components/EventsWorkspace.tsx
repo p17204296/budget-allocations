@@ -642,14 +642,20 @@ function EventEditor({
                     <dt>Still to pay</dt>
                     <dd>{money(result.unpaid, draft.currency)}</dd>
                   </div>
+                  {result.overpaid > 0 ? (
+                    <div>
+                      <dt>Paid above item costs</dt>
+                      <dd>{money(result.overpaid, draft.currency)}</dd>
+                    </div>
+                  ) : null}
                 </dl>
                 <div className="event-funding-result">
                   <span>
-                    Additional savings needed{" "}
-                    <CalculationHelp label="additional savings needed">
+                    Still to save toward target{" "}
+                    <CalculationHelp label="savings still needed">
                       Fund the higher of your budget or item costs. Subtract
                       starting funding and actual monthly savings. Payments are
-                      already included in funding and are not subtracted again.
+                      recorded separately from savings.
                     </CalculationHelp>
                   </span>
                   <strong>{money(result.gap, draft.currency)}</strong>
@@ -695,7 +701,7 @@ function EventEditor({
             draft.items.map((item, index) => {
               const cost = parseAmount(item.cost, draft.currency);
               const paid = parseAmount(item.paid, draft.currency);
-              const invalidPayment =
+              const overExpectedCost =
                 cost !== null && paid !== null && paid > cost;
               return (
                 <section
@@ -753,18 +759,18 @@ function EventEditor({
                     label="Amount paid"
                     value={item.paid}
                     currency={draft.currency}
-                    invalid={invalidPayment}
                     onChange={(value) => updateItem(item.key, "paid", value)}
                   />
-                  <p
-                    className={
-                      invalidPayment
-                        ? "event-field-error event-item-remaining"
-                        : "event-item-remaining"
-                    }
-                  >
-                    {invalidPayment ? (
-                      "Amount paid cannot exceed expected cost."
+                  <p className="event-item-remaining">
+                    {overExpectedCost ? (
+                      <>
+                        Over expected cost{" "}
+                        <strong>
+                          {cost !== null && paid !== null
+                            ? money(paid - cost, draft.currency)
+                            : "Complete amounts above"}
+                        </strong>
+                      </>
                     ) : (
                       <>
                         Still to pay{" "}
@@ -820,9 +826,9 @@ function EventEditor({
                 }
               />
               <p className="event-help">
-                Money already committed to this event, including payments
-                already made. Don’t include savings entered in the monthly rows.
-                Starting from zero is fine.
+                Money already set aside for this event before this plan starts.
+                Don’t include savings entered in the monthly rows. Payments are
+                tracked separately. Starting from zero is fine.
               </p>
             </div>
             <div className="event-field">
@@ -896,6 +902,26 @@ function EventEditor({
               ) : null}
             </div>
           </div>
+          <div className="event-payment-tracking-setting">
+            <label className="event-payment-tracking-label">
+              <input
+                type="checkbox"
+                checked={draft.trackPaymentsAgainstSavings ?? false}
+                onChange={(event) =>
+                  edit({
+                    ...draft,
+                    trackPaymentsAgainstSavings: event.target.checked,
+                  })
+                }
+              />
+              Track payments against these savings
+            </label>
+            <p className="event-help">
+              Turn this on if event payments should come from the savings
+              recorded in this plan. The app will show a warning if payments
+              exceed tracked funding. It won’t prevent saving.
+            </p>
+          </div>
           {result ? (
             <dl className="event-savings-totals">
               <div>
@@ -918,8 +944,9 @@ function EventEditor({
           ) : null}
           {result?.paymentWarning ? (
             <p className="event-savings-warning" role="status">
-              Recorded payments exceed the funding entered. Check your starting
-              funding and actual savings.
+              Recorded payments exceed savings tracked for this event by{" "}
+              {money(result.paid - result.funded, draft.currency)}. Check your
+              starting funding and actual savings. You can still save this plan.
             </p>
           ) : null}
           <div className="event-savings-toolbar">

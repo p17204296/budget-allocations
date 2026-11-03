@@ -48,6 +48,21 @@ describe("event calculations", () => {
       gap: 900,
     });
   });
+  it("does not net one item’s overpayment against another item’s unpaid cost", () => {
+    const value = {
+      ...draft(),
+      items: [
+        { key: "overpaid", name: "Overpaid item", cost: 100, paid: 150 },
+        { key: "unpaid", name: "Unpaid item", cost: 100, paid: 0 },
+      ],
+    };
+    expect(calculateEvent(value)).toMatchObject({
+      total: 200,
+      paid: 150,
+      unpaid: 100,
+      overpaid: 50,
+    });
+  });
   it("converts funding modes without changing the gap", () => {
     const plan = draft();
     const total = {
@@ -95,17 +110,29 @@ describe("event calculations", () => {
     expect(contributionCount("2026-10-25", new Date(2026, 9, 26))).toBe(0);
     expect(contributionCount("", new Date(2026, 9, 26))).toBeNull();
   });
-  it("rejects invalid dates, payments, duplicates, amounts and underfunded total mode", () => {
+  it("keeps recorded payments independent from funding and rejects invalid dates, duplicates and amounts", () => {
     expect(validDate("2027-02-29")).toBe(false);
     expect(validDate("2028-02-29")).toBe(true);
     const plan = draft();
     expect(eventError(plan)).toBeNull();
     expect(
-      eventError({ ...plan, fundingMode: "total", fundingAmount: 99 }),
-    ).toContain("cover");
+      eventError({ ...plan, fundingMode: "total", fundingAmount: 0 }),
+    ).toBeNull();
+    const tracked = {
+      ...plan,
+      fundingMode: "total",
+      fundingAmount: 0,
+      trackPaymentsAgainstSavings: true,
+    } satisfies EventDraft;
+    expect(eventError(tracked)).toBeNull();
+    expect(calculateEvent(tracked).paymentWarning).toBe(true);
+    expect(
+      calculateEvent({ ...tracked, trackPaymentsAgainstSavings: false })
+        .paymentWarning,
+    ).toBe(false);
     expect(
       eventError({ ...plan, items: [{ ...plan.items[0], paid: 801 }] }),
-    ).toContain("exceed");
+    ).toBeNull();
     expect(
       eventError({ ...plan, items: [...plan.items, ...plan.items] }),
     ).toContain("unique");
@@ -154,13 +181,13 @@ describe("monthly savings plans", () => {
     expect(savingMonths("2027-03-02", "2027-03-01")).toEqual([]);
   });
   it.each([0, 10, 900, 1200])(
-    "supports starting funding of %s without counting payments again",
+    "keeps savings targets independent from payments with starting funding of %s",
     (starting) => {
       const value = plan(starting);
       value.items = [{ key: "deposit", name: "Deposit", cost: 100, paid: 100 }];
       expect(eventError(value)).toBeNull();
       expect(calculateEvent(value).gap).toBe(Math.max(0, 900 - starting));
-      expect(calculateEvent(value).paymentWarning).toBe(starting < 100);
+      expect(calculateEvent(value).paymentWarning).toBe(false);
     },
   );
   it("splits the initial target exactly, including smallest-unit remainders and JPY", () => {

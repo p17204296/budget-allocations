@@ -14,6 +14,7 @@ export const savingsPlanValidator = v.object({
 });
 export const eventFields = {
   savingsPlan: v.optional(savingsPlanValidator),
+  trackPaymentsAgainstSavings: v.optional(v.boolean()),
   notes: v.optional(v.string()),
   name: v.string(),
   currency: v.string(),
