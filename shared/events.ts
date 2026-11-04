@@ -240,87 +240,89 @@ export function normalizeSavings(
     { startDate, startingFunding: convertFunding(draft, "total"), months: [] },
     draft.fundingDate,
   );
-  return rebalanceSavings({ ...draft, savingsPlan: plan }, startDate, today);
+  return rebalanceSavings({ ...draft, savingsPlan: plan }, startDate);
 }
-/** Spread the funding gap from the selected date, preserving recorded actuals. */
+/** Spread the unfunded amount across selected months without recorded savings.
+ * Calendar time never removes a selected month or creates a historical target.
+ */
 export function rebalanceSavings(
   draft: EventDraft,
   fromDate = draft.savingsPlan?.startDate ?? dateString(new Date()),
-  today = dateString(new Date()),
 ): SavingsPlan {
   const plan = draft.savingsPlan;
   if (!plan) throw new Error("Initialize the savings plan before rebalancing.");
-  const activeMonths = savingMonths(plan.startDate, draft.fundingDate);
-  const active = new Set(activeMonths);
-  const remaining = plan.months.filter(
-    (row) =>
-      active.has(row.month) &&
-      row.month >= fromDate.slice(0, 7) &&
-      row.month >= today.slice(0, 7) &&
-      minor(row.actual, draft.currency) === 0,
-  );
-  const remainingMonths = new Set(remaining.map((row) => row.month));
-  if (
-    !remaining.length ||
-    draft.fundingDate < fromDate ||
-    draft.fundingDate < today
-  )
-    return plan;
+  const active = new Set(savingMonths(plan.startDate, draft.fundingDate));
+  const remaining = plan.months
+    .filter(
+      (row) =>
+        active.has(row.month) &&
+        row.month >= fromDate.slice(0, 7) &&
+        row.actual === 0,
+    )
+    .sort((a, b) => a.month.localeCompare(b.month));
+  if (!remaining.length || draft.fundingDate < fromDate) return plan;
   const factor = minorFactor(draft.currency);
-  const gap = minor(calculateEvent(draft).gap, draft.currency);
-  const base = Math.floor(gap / remaining.length);
-  let remainder = gap % remaining.length;
-  const initialTarget = Math.max(
+  const remainingMonths = new Set(remaining.map((row) => row.month));
+  // A caller can rebalance from a later date. Retained earlier plans still count.
+  const retained = plan.months.reduce(
+    (sum, row) =>
+      sum +
+      (active.has(row.month) &&
+      !remainingMonths.has(row.month) &&
+      row.actual === 0
+        ? minor(row.planned, draft.currency)
+        : 0),
     0,
-    minor(calculateEvent(draft).target, draft.currency) -
-      minor(plan.startingFunding, draft.currency),
   );
-  const initialBase = Math.floor(initialTarget / activeMonths.length);
-  const initialRemainder = initialTarget % activeMonths.length;
+  const gap = Math.max(
+    0,
+    minor(calculateEvent(draft).gap, draft.currency) - retained,
+  );
+  const base = Math.floor(gap / remaining.length);
+  const remainder = gap % remaining.length;
+  const amounts = new Map(
+    remaining.map((row, index) => [
+      row.month,
+      (base + (index < remainder ? 1 : 0)) / factor,
+    ]),
+  );
   return {
     ...plan,
     months: plan.months.map((row) => {
-      if (!remainingMonths.has(row.month)) {
-        const position = activeMonths.indexOf(row.month);
-        if (
-          position >= 0 &&
-          row.month >= fromDate.slice(0, 7) &&
-          row.month < today.slice(0, 7) &&
-          minor(row.planned, draft.currency) === 0 &&
-          minor(row.actual, draft.currency) === 0
-        )
-          return {
-            ...row,
-            planned: (initialBase + (position < initialRemainder ? 1 : 0)) / factor,
-          };
-        return row;
-      }
-      const extra = remainder > 0 ? 1 : 0;
-      remainder -= extra;
-      return {
-        ...row,
-        planned: (base + extra) / factor,
-      };
+      const planned = amounts.get(row.month);
+      return planned === undefined ? row : { ...row, planned };
     }),
   };
 }
-/** Forecast recorded savings plus planned amounts for months still ahead. */
-export function plannedFunding(
-  draft: EventDraft,
-  today = dateString(new Date()),
-): number {
-  if (!draft.savingsPlan) return 0;
-  const active = new Set(
-    savingMonths(draft.savingsPlan.startDate, draft.fundingDate),
-  );
+/** Starting funding plus the literal sum of planned amounts in the selected schedule. */
+export function plannedFunding(draft: EventDraft): number {
+  const plan = draft.savingsPlan;
+  if (!plan) return 0;
+  const active = new Set(savingMonths(plan.startDate, draft.fundingDate));
   return (
-    (minor(draft.savingsPlan.startingFunding, draft.currency) +
-      draft.savingsPlan.months.reduce(
+    (minor(plan.startingFunding, draft.currency) +
+      plan.months.reduce(
         (sum, row) =>
           sum +
-          (active.has(row.month) &&
-          row.month >= today.slice(0, 7) &&
-          minor(row.actual, draft.currency) === 0
+          (active.has(row.month) ? minor(row.planned, draft.currency) : 0),
+        0,
+      )) /
+    minorFactor(draft.currency)
+  );
+}
+/** Recorded funding plus selected monthly plans that have no recorded savings.
+ * Actual savings replace that month's plan; outside-schedule actuals still count.
+ */
+export function expectedFunding(draft: EventDraft): number {
+  const plan = draft.savingsPlan;
+  if (!plan) return 0;
+  const active = new Set(savingMonths(plan.startDate, draft.fundingDate));
+  return (
+    (minor(plan.startingFunding, draft.currency) +
+      plan.months.reduce(
+        (sum, row) =>
+          sum +
+          (active.has(row.month) && row.actual === 0
             ? minor(row.planned, draft.currency)
             : minor(row.actual, draft.currency)),
         0,
@@ -329,19 +331,15 @@ export function plannedFunding(
   );
 }
 
-/** Compare money still needed with planned amounts for months still ahead. */
+/** Compare recorded funding and all selected unrecorded monthly plans with the target. */
 export function savingsRebalanceSuggestion(
   draft: EventDraft,
-  today = dateString(new Date()),
 ): { kind: "shortfall" | "surplus"; amount: number; key: string } | null {
   const plan = draft.savingsPlan;
-  if (!plan || !draft.fundingDate || draft.fundingDate < today) return null;
+  if (!plan || !draft.fundingDate) return null;
   const active = new Set(savingMonths(plan.startDate, draft.fundingDate));
   const remaining = plan.months.filter(
-    (row) =>
-      active.has(row.month) &&
-      row.month >= today.slice(0, 7) &&
-      minor(row.actual, draft.currency) === 0,
+    (row) => active.has(row.month) && minor(row.actual, draft.currency) === 0,
   );
   if (!remaining.length) return null;
   const needed = minor(calculateEvent(draft).gap, draft.currency);

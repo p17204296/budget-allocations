@@ -1,3 +1,19 @@
+# Selected-month savings correction — 4 November 2026
+
+The live example was inspected read-only. Its £2,940 October–January plan contained £735, £980, £980 and £980, while the displayed forecast excluded October and reported £2,940. Two new regression tests failed against the original code with precisely those values. Prior tests explicitly expected historical targets to be added without reducing future targets; those expectations encoded the wrong rule.
+
+The selected start and deadline now define the schedule independently of today's date. Rebalancing includes every selected month without recorded savings. Planned funding is starting funding plus the literal sum of selected plans; expected funding substitutes recorded actuals and includes actuals retained outside the schedule. Actual funding remains separate. Existing plans load unchanged; explicit rebalancing corrects their amounts. No schema change, production migration or production deployment was performed.
+
+Validation:
+
+- Strict application, configuration, Convex and event-test type checks passed.
+- All 133 tests passed, including 144 combinations across GBP/JPY, targets, starting funds, actual savings and outside-schedule savings.
+- The exact reproduction is covered in calculation, editor and Convex save/reopen tests. Regression coverage also checks date independence through and beyond the deadline, retained earlier commitments, penny rounding and rebalance idempotence.
+- Production build passed with the existing chunk-size and Browserslist advisories.
+- Local browser reproduction uses a separate guest workspace against development Convex, with £2,870 item costs and £618 paid. It displays the £735 surplus before rebalancing and £735 in each selected month afterward. Actual savings remain £0 and planned/expected funding both become £2,940.
+
+---
+
 # Event savings plan verification
 
 Verified on 29 October 2026 on branch `feat/event-savings-plan`, against development Convex deployment `oceanic-mockingbird-872` and the local Vite frontend. Production was not deployed.

@@ -7,7 +7,12 @@ import {
   MAX_EVENT_ITEMS,
   normalizeSavings,
   calculateEvent,
+  rebalanceSavings,
+  plannedFunding,
+  expectedFunding,
 } from "../shared/events";
+import { octoberJanuaryEvent } from "./fixtures/octoberJanuaryEvent";
+import { editEvent, parseEvent } from "../src/lib/eventDraft";
 const modules = import.meta.glob("../convex/**/*.ts");
 async function setup() {
   const t = convexTest({ schema, modules, transactionLimits: true });
@@ -44,11 +49,15 @@ describe("event persistence", () => {
         expectedRevision: 1,
         draft: {
           ...draft,
-          items: [{ key: "overrun", name: "Hotel overrun", cost: 10, paid: 11 }],
+          items: [
+            { key: "overrun", name: "Hotel overrun", cost: 10, paid: 11 },
+          ],
         },
       }),
     ).resolves.toBe(2);
-    expect((await owner.query(api.events.get, { id }))?.draft.items[0]).toMatchObject({ cost: 10, paid: 11 });
+    expect(
+      (await owner.query(api.events.get, { id }))?.draft.items[0],
+    ).toMatchObject({ cost: 10, paid: 11 });
     await owner.mutation(api.events.remove, { id, expectedRevision: 2 });
     expect(await owner.query(api.events.get, { id })).toBeNull();
   });
@@ -193,8 +202,20 @@ describe("event persistence", () => {
     for (const draft of [
       { ...base, budget: -1 },
       { ...base, savingsPlan: { ...base.savingsPlan, startingFunding: -1 } },
-      { ...base, savingsPlan: { ...base.savingsPlan, months: [{ month: "2027-01", planned: -1, actual: 0 }] } },
-      { ...base, savingsPlan: { ...base.savingsPlan, months: [{ month: "2027-01", planned: 100, actual: -1 }] } },
+      {
+        ...base,
+        savingsPlan: {
+          ...base.savingsPlan,
+          months: [{ month: "2027-01", planned: -1, actual: 0 }],
+        },
+      },
+      {
+        ...base,
+        savingsPlan: {
+          ...base.savingsPlan,
+          months: [{ month: "2027-01", planned: 100, actual: -1 }],
+        },
+      },
     ]) {
       await expect(
         owner.mutation(api.events.save, { id, expectedRevision: 0, draft }),
@@ -312,4 +333,34 @@ describe("event persistence", () => {
       vi.useRealTimers();
     }
   });
+});
+
+it("loads existing four-month data unchanged and round-trips its corrected plan", async () => {
+  const { owner, id } = await setup();
+  const draft = octoberJanuaryEvent();
+  await owner.mutation(api.events.save, { id, expectedRevision: 0, draft });
+  const stored = await owner.query(api.events.get, { id });
+  if (!stored) throw new Error("Missing saved reproduction");
+  expect(stored.draft).toEqual(draft);
+  const parsed = parseEvent(editEvent(stored.draft));
+  if (!parsed.draft) throw new Error(parsed.error);
+  expect(plannedFunding(parsed.draft)).toBe(3675);
+  const corrected = {
+    ...parsed.draft,
+    savingsPlan: rebalanceSavings(parsed.draft),
+  };
+  await owner.mutation(api.events.save, {
+    id,
+    expectedRevision: 1,
+    draft: corrected,
+  });
+  const reopened = await owner.query(api.events.get, { id });
+  if (!reopened) throw new Error("Missing corrected reproduction");
+  expect(reopened.draft).toEqual(corrected);
+  expect(reopened.draft.savingsPlan?.months.map((row) => row.planned)).toEqual([
+    735, 735, 735, 735,
+  ]);
+  expect(plannedFunding(reopened.draft)).toBe(2940);
+  expect(expectedFunding(reopened.draft)).toBe(2940);
+  expect(calculateEvent(reopened.draft).funded).toBe(0);
 });
