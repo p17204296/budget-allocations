@@ -642,3 +642,47 @@ it("repairs the live four-month plan explicitly and saves £735 per month", asyn
     }),
   );
 });
+
+it("distinguishes reducible plans from the total surplus when already overfunded", async () => {
+  if (!mock.state.detail) throw new Error("Missing fixture");
+  mock.state.detail.draft.budget = 1000;
+  mock.state.detail.draft.eventDate = "2027-02-01";
+  mock.state.detail.draft.fundingDate = "2027-02-01";
+  mock.state.detail.draft.savingsPlan = {
+    startDate: "2027-01-01",
+    startingFunding: 0,
+    months: [
+      { month: "2027-01", planned: 500, actual: 1500 },
+      { month: "2027-02", planned: 500, actual: 0 },
+    ],
+  };
+  await open();
+  expect(screen.getByText("Expected funding: £2,000.00")).toBeTruthy();
+  expect(screen.getByText("£1,000.00 above the target.")).toBeTruthy();
+  expect(
+    screen.getByText(
+      "You could reduce planned savings by £500.00. Rebalance to lower the planned amounts for months without recorded savings.",
+    ),
+  ).toBeTruthy();
+  expect(
+    screen.queryByText(/Your expected funding is £500.00 above/),
+  ).toBeNull();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Rebalance savings plan" }),
+  );
+  expect(
+    screen
+      .getByLabelText("Actually saved — January 2027")
+      .getAttribute("value"),
+  ).toBe("1500");
+  expect(
+    screen
+      .getByLabelText("Planned savings — February 2027")
+      .getAttribute("value"),
+  ).toBe("0");
+  expect(screen.getByText("Expected funding: £1,500.00")).toBeTruthy();
+  expect(screen.getByText("£500.00 above the target.")).toBeTruthy();
+  expect(
+    screen.queryByText("You could reduce your planned savings"),
+  ).toBeNull();
+});

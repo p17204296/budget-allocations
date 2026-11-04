@@ -1003,7 +1003,7 @@ function EventEditor({
                 <p>
                   {suggestion.kind === "shortfall"
                     ? `Your expected funding falls ${money(suggestion.amount, draft.currency)} short of the target. Rebalance spreads what’s still needed across all selected months without recorded savings, including past months.`
-                    : `Your expected funding is ${money(suggestion.amount, draft.currency)} above the target. Rebalance if you’d like to lower the planned amounts for months without recorded savings.`}
+                    : `You could reduce planned savings by ${money(suggestion.amount, draft.currency)}. Rebalance to lower the planned amounts for months without recorded savings.`}
                 </p>
                 <p>
                   Months with recorded savings keep their planned and actual
