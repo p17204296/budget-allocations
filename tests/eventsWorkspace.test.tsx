@@ -20,6 +20,7 @@ import { api } from "../convex/_generated/api";
 import { EventsWorkspace } from "../src/components/EventsWorkspace";
 import { NavigationGuardProvider } from "../src/hooks/NavigationGuard";
 import { ConvexError } from "convex/values";
+import { octoberJanuaryEvent } from "./fixtures/octoberJanuaryEvent";
 type Detail = NonNullable<FunctionReturnType<typeof api.events.get>>;
 const mock = vi.hoisted(() => {
   const state: {
@@ -235,7 +236,7 @@ describe("event editor", () => {
         .getAttribute("value"),
     ).toBe("50");
     fireEvent.click(
-      screen.getByRole("button", { name: "Rebalance remaining months" }),
+      screen.getByRole("button", { name: "Rebalance savings plan" }),
     );
     expect(
       screen
@@ -274,9 +275,7 @@ describe("event editor", () => {
       }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Delete month" }));
-    expect(
-      screen.queryByLabelText("Actually saved — January 2027"),
-    ).toBeNull();
+    expect(screen.queryByLabelText("Actually saved — January 2027")).toBeNull();
     fireEvent.change(screen.getByLabelText("Start saving from"), {
       target: { value: "2027-01-01" },
     });
@@ -286,7 +285,7 @@ describe("event editor", () => {
         .getAttribute("value"),
     ).toBe("0");
   });
-  it("fills zero historical targets while keeping missed savings due in future months", async () => {
+  it("balances all selected months, including historical months, within one target", async () => {
     await open();
     fireEvent.change(screen.getByLabelText("Start saving from"), {
       target: { value: "2026-01-01" },
@@ -298,11 +297,13 @@ describe("event editor", () => {
       target: { value: "1300" },
     });
     expect(
-      screen.getByText(/Rebalance spreads the gap over current and future months/),
+      screen.getByText(
+        /Rebalance spreads what’s still needed across all selected months/,
+      ),
     ).toBeTruthy();
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Rebalance remaining months" }),
+      screen.getByRole("button", { name: "Rebalance savings plan" }),
     );
 
     expect(
@@ -352,10 +353,10 @@ describe("event editor", () => {
       screen.getByText("Your savings plan needs a little more"),
     ).toBeTruthy();
     const rebalance = screen.getByRole("button", {
-      name: "Rebalance remaining months",
+      name: "Rebalance savings plan",
     });
     expect(rebalance.className).toBe("btn-primary");
-    expect(screen.getByText(/fall £300.00 short/)).toBeTruthy();
+    expect(screen.getByText(/falls £300.00 short/)).toBeTruthy();
     const before = screen
       .getByLabelText("Planned savings — January 2027")
       .getAttribute("value");
@@ -393,9 +394,9 @@ describe("event editor", () => {
     fireEvent.change(screen.getByLabelText("Total budget"), {
       target: { value: "1600" },
     });
-    expect(screen.getByText(/fall £600.00 short/)).toBeTruthy();
+    expect(screen.getByText(/falls £600.00 short/)).toBeTruthy();
     fireEvent.click(
-      screen.getByRole("button", { name: "Rebalance remaining months" }),
+      screen.getByRole("button", { name: "Rebalance savings plan" }),
     );
     expect(
       screen.queryByText("Your savings plan needs a little more"),
@@ -420,7 +421,7 @@ describe("event editor", () => {
     ).toBeNull();
     expect(
       screen
-        .getByRole("button", { name: "Rebalance remaining months" })
+        .getByRole("button", { name: "Rebalance savings plan" })
         .hasAttribute("disabled"),
     ).toBe(true);
   });
@@ -451,17 +452,32 @@ describe("event editor", () => {
     fireEvent.change(screen.getByLabelText("Event date (optional)"), {
       target: { value: "2027-01-01" },
     });
-    for (const field of ["Planned savings — January 2027", "Actually saved — January 2027"]) {
+    for (const field of [
+      "Planned savings — January 2027",
+      "Actually saved — January 2027",
+    ]) {
       fireEvent.change(screen.getByLabelText(field), {
         target: { value: "-1" },
       });
-      expect(screen.getByRole("button", { name: "Rebalance remaining months" }).hasAttribute("disabled")).toBe(true);
-      expect(screen.getByRole("button", { name: "Save changes" }).hasAttribute("disabled")).toBe(true);
+      expect(
+        screen
+          .getByRole("button", { name: "Rebalance savings plan" })
+          .hasAttribute("disabled"),
+      ).toBe(true);
+      expect(
+        screen
+          .getByRole("button", { name: "Save changes" })
+          .hasAttribute("disabled"),
+      ).toBe(true);
       fireEvent.change(screen.getByLabelText(field), {
         target: { value: "0" },
       });
     }
-    expect(screen.getByRole("button", { name: "Rebalance remaining months" }).hasAttribute("disabled")).toBe(false);
+    expect(
+      screen
+        .getByRole("button", { name: "Rebalance savings plan" })
+        .hasAttribute("disabled"),
+    ).toBe(false);
   });
   it("allows payments above expected cost without requiring matching funding", async () => {
     await open();
@@ -570,4 +586,103 @@ describe("event editor", () => {
         .getAttribute("value"),
     ).toBe("2027-03-20");
   });
+});
+
+it("repairs the live four-month plan explicitly and saves £735 per month", async () => {
+  if (!mock.state.detail) throw new Error("Missing fixture");
+  vi.setSystemTime(new Date("2026-11-04T12:00:00Z"));
+  const reproduction = octoberJanuaryEvent();
+  mock.state.detail.draft = {
+    ...reproduction,
+    name: "Anniversary",
+    savingsPlan: reproduction.savingsPlan,
+    trackPaymentsAgainstSavings: reproduction.trackPaymentsAgainstSavings,
+    notes: reproduction.notes,
+  };
+  await open();
+  expect(screen.getByText("Planned funding: £3,675.00")).toBeTruthy();
+  expect(screen.getByText("Expected funding: £3,675.00")).toBeTruthy();
+  expect(screen.getByText("£735.00 above the target.")).toBeTruthy();
+  expect(mock.save).not.toHaveBeenCalled();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Rebalance savings plan" }),
+  );
+  for (const month of [
+    "October 2026",
+    "November 2026",
+    "December 2026",
+    "January 2027",
+  ]) {
+    expect(
+      screen.getByLabelText(`Planned savings — ${month}`).getAttribute("value"),
+    ).toBe("735");
+    expect(
+      screen.getByLabelText(`Actually saved — ${month}`).getAttribute("value"),
+    ).toBe("0");
+  }
+  expect(screen.getByText("Planned funding: £2,940.00")).toBeTruthy();
+  expect(screen.getByText("Expected funding: £2,940.00")).toBeTruthy();
+  expect(screen.getByText("Your plan covers the target exactly.")).toBeTruthy();
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  });
+  expect(mock.save).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      draft: expect.objectContaining({
+        savingsPlan: {
+          startDate: "2026-10-15",
+          startingFunding: 0,
+          months: ["2026-10", "2026-11", "2026-12", "2027-01"].map((month) => ({
+            month,
+            planned: 735,
+            actual: 0,
+          })),
+        },
+      }),
+    }),
+  );
+});
+
+it("distinguishes reducible plans from the total surplus when already overfunded", async () => {
+  if (!mock.state.detail) throw new Error("Missing fixture");
+  mock.state.detail.draft.budget = 1000;
+  mock.state.detail.draft.eventDate = "2027-02-01";
+  mock.state.detail.draft.fundingDate = "2027-02-01";
+  mock.state.detail.draft.savingsPlan = {
+    startDate: "2027-01-01",
+    startingFunding: 0,
+    months: [
+      { month: "2027-01", planned: 500, actual: 1500 },
+      { month: "2027-02", planned: 500, actual: 0 },
+    ],
+  };
+  await open();
+  expect(screen.getByText("Expected funding: £2,000.00")).toBeTruthy();
+  expect(screen.getByText("£1,000.00 above the target.")).toBeTruthy();
+  expect(
+    screen.getByText(
+      "You could reduce planned savings by £500.00. Rebalance to lower the planned amounts for months without recorded savings.",
+    ),
+  ).toBeTruthy();
+  expect(
+    screen.queryByText(/Your expected funding is £500.00 above/),
+  ).toBeNull();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Rebalance savings plan" }),
+  );
+  expect(
+    screen
+      .getByLabelText("Actually saved — January 2027")
+      .getAttribute("value"),
+  ).toBe("1500");
+  expect(
+    screen
+      .getByLabelText("Planned savings — February 2027")
+      .getAttribute("value"),
+  ).toBe("0");
+  expect(screen.getByText("Expected funding: £1,500.00")).toBeTruthy();
+  expect(screen.getByText("£500.00 above the target.")).toBeTruthy();
+  expect(
+    screen.queryByText("You could reduce your planned savings"),
+  ).toBeNull();
 });

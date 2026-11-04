@@ -12,6 +12,7 @@ import {
   reconcileSavings,
   rebalanceSavings,
   plannedFunding,
+  expectedFunding,
   savingsRebalanceSuggestion,
   validDate,
   dateString,
@@ -379,7 +380,7 @@ function EventEditor({
     ? calculateEvent(parsed.draft, new Date(`${today}T12:00:00`))
     : null;
   const suggestion = parsed.draft
-    ? savingsRebalanceSuggestion(parsed.draft, today)
+    ? savingsRebalanceSuggestion(parsed.draft)
     : null;
   const suggestRebalance =
     suggestion !== null && suggestion.key !== dismissedSuggestion;
@@ -411,11 +412,7 @@ function EventEditor({
           if (value)
             next = editEvent({
               ...value,
-              savingsPlan: rebalanceSavings(
-                value,
-                next.savingsPlan.startDate,
-                today,
-              ),
+              savingsPlan: rebalanceSavings(value, next.savingsPlan.startDate),
             });
         }
       }
@@ -953,8 +950,8 @@ function EventEditor({
             <div>
               <h3>Month-by-month savings</h3>
               <p className="event-help">
-                Both the start and deadline months are included. Planned amounts
-                stay fixed until you edit or rebalance them.
+                All selected months count, including past months. Planned
+                amounts stay fixed until you edit or rebalance them.
               </p>
             </div>
             <button
@@ -963,9 +960,7 @@ function EventEditor({
               aria-describedby={
                 suggestRebalance ? "rebalance-suggestion" : undefined
               }
-              disabled={
-                !parsed.draft || !draft.fundingDate || draft.fundingDate < today
-              }
+              disabled={!parsed.draft || !draft.fundingDate}
               onClick={() => {
                 if (!parsed.draft) return;
                 const value = {
@@ -985,13 +980,12 @@ function EventEditor({
                     savingsPlan: rebalanceSavings(
                       value,
                       value.savingsPlan.startDate,
-                      today,
                     ),
                   }),
                 );
               }}
             >
-              Rebalance remaining months
+              Rebalance savings plan
             </button>
           </div>
           {suggestRebalance && suggestion && (
@@ -1008,15 +1002,12 @@ function EventEditor({
                 </strong>
                 <p>
                   {suggestion.kind === "shortfall"
-                    ? draft.savingsPlan.startDate.slice(0, 7) < today.slice(0, 7)
-                      ? `Your remaining planned savings fall ${money(suggestion.amount, draft.currency)} short of what’s still needed. Rebalance spreads the gap over current and future months. Existing past targets and recorded savings stay as they are; zero past targets can be filled in.`
-                      : `Your remaining planned savings fall ${money(suggestion.amount, draft.currency)} short of what’s still needed. Rebalance to spread the difference across the remaining months.`
-                    : `Your remaining planned savings are ${money(suggestion.amount, draft.currency)} above what’s still needed. Rebalance if you’d like to lower them.`}
+                    ? `Your expected funding falls ${money(suggestion.amount, draft.currency)} short of the target. Rebalance spreads what’s still needed across all selected months without recorded savings, including past months.`
+                    : `You could reduce planned savings by ${money(suggestion.amount, draft.currency)}. Rebalance to lower the planned amounts for months without recorded savings.`}
                 </p>
                 <p>
-                  Months before your selected start date and all recorded
-                  savings stay as they are. You can also edit the monthly
-                  amounts yourself.
+                  Months with recorded savings keep their planned and actual
+                  amounts. You can also edit the monthly amounts yourself.
                 </p>
               </div>
               <button
@@ -1058,8 +1049,8 @@ function EventEditor({
                     <h3>Outside current schedule</h3>
                     <p className="event-help">
                       These entries are retained. Actual savings still count
-                      toward your event; planned amounts are excluded from the
-                      current schedule.
+                      toward your event; planned amounts are excluded from both
+                      planned and expected funding.
                     </p>
                   </>
                 ) : null}
@@ -1110,7 +1101,9 @@ function EventEditor({
                           className="event-month-delete"
                           aria-label={`Delete ${label} from outside current schedule`}
                           title={`Delete ${label} from outside current schedule`}
-                          onClick={() => setMonthToDelete({ month: row.month, label })}
+                          onClick={() =>
+                            setMonthToDelete({ month: row.month, label })
+                          }
                         >
                           <Icon name="trash" />
                         </button>
@@ -1125,17 +1118,29 @@ function EventEditor({
             <div className="event-savings-forecast">
               <strong>
                 Planned funding:{" "}
-                {money(plannedFunding(parsed.draft, today), draft.currency)}
+                {money(plannedFunding(parsed.draft), draft.currency)}
+              </strong>
+              <p className="event-help">
+                Starting funding plus every planned amount in the selected
+                schedule.
+              </p>
+              <strong>
+                Expected funding:{" "}
+                {money(expectedFunding(parsed.draft), draft.currency)}
               </strong>
               <span>
-                {plannedFunding(parsed.draft, today) >= result.target
-                  ? "Your plan covers the target."
-                  : `${money(result.target - plannedFunding(parsed.draft, today), draft.currency)} more needs to be planned.`}
+                {expectedFunding(parsed.draft) === result.target
+                  ? "Your plan covers the target exactly."
+                  : expectedFunding(parsed.draft) > result.target
+                    ? `${money(expectedFunding(parsed.draft) - result.target, draft.currency)} above the target.`
+                    : `${money(result.target - expectedFunding(parsed.draft), draft.currency)} more needs to be planned.`}
               </span>
               <p className="event-help">
-                This forecast combines starting funding, recorded savings, and
-                planned amounts for months still ahead. It is separate from
-                money actually funded.
+                Expected funding uses actual savings in place of that month’s
+                plan. A month with zero actual savings still uses its planned
+                amount, even in the past. If you skipped a month, set its plan
+                to zero. Actual savings outside the schedule still count.
+                Planned money is not money actually saved.
               </p>
             </div>
           ) : null}
