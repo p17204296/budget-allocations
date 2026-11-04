@@ -294,22 +294,6 @@ export function rebalanceSavings(
     }),
   };
 }
-/** Starting funding plus the literal sum of planned amounts in the selected schedule. */
-export function plannedFunding(draft: EventDraft): number {
-  const plan = draft.savingsPlan;
-  if (!plan) return 0;
-  const active = new Set(savingMonths(plan.startDate, draft.fundingDate));
-  return (
-    (minor(plan.startingFunding, draft.currency) +
-      plan.months.reduce(
-        (sum, row) =>
-          sum +
-          (active.has(row.month) ? minor(row.planned, draft.currency) : 0),
-        0,
-      )) /
-    minorFactor(draft.currency)
-  );
-}
 /** Recorded funding plus selected monthly plans that have no recorded savings.
  * Actual savings replace that month's plan; outside-schedule actuals still count.
  */

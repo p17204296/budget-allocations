@@ -8,7 +8,6 @@ import {
   normalizeSavings,
   calculateEvent,
   rebalanceSavings,
-  plannedFunding,
   expectedFunding,
 } from "../shared/events";
 import { octoberJanuaryEvent } from "./fixtures/octoberJanuaryEvent";
@@ -344,7 +343,7 @@ it("loads existing four-month data unchanged and round-trips its corrected plan"
   expect(stored.draft).toEqual(draft);
   const parsed = parseEvent(editEvent(stored.draft));
   if (!parsed.draft) throw new Error(parsed.error);
-  expect(plannedFunding(parsed.draft)).toBe(3675);
+  expect(expectedFunding(parsed.draft)).toBe(3675);
   const corrected = {
     ...parsed.draft,
     savingsPlan: rebalanceSavings(parsed.draft),
@@ -360,7 +359,6 @@ it("loads existing four-month data unchanged and round-trips its corrected plan"
   expect(reopened.draft.savingsPlan?.months.map((row) => row.planned)).toEqual([
     735, 735, 735, 735,
   ]);
-  expect(plannedFunding(reopened.draft)).toBe(2940);
   expect(expectedFunding(reopened.draft)).toBe(2940);
   expect(calculateEvent(reopened.draft).funded).toBe(0);
 });

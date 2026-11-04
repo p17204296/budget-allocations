@@ -11,7 +11,6 @@ import {
   savingMonths,
   reconcileSavings,
   rebalanceSavings,
-  plannedFunding,
   expectedFunding,
   savingsRebalanceSuggestion,
   validDate,
@@ -1049,8 +1048,8 @@ function EventEditor({
                     <h3>Outside current schedule</h3>
                     <p className="event-help">
                       These entries are retained. Actual savings still count
-                      toward your event; planned amounts are excluded from both
-                      planned and expected funding.
+                      toward your event; planned amounts are excluded from
+                      expected funding.
                     </p>
                   </>
                 ) : null}
@@ -1116,14 +1115,6 @@ function EventEditor({
           })}
           {parsed.draft && result ? (
             <div className="event-savings-forecast">
-              <strong>
-                Planned funding:{" "}
-                {money(plannedFunding(parsed.draft), draft.currency)}
-              </strong>
-              <p className="event-help">
-                Starting funding plus every planned amount in the selected
-                schedule.
-              </p>
               <strong>
                 Expected funding:{" "}
                 {money(expectedFunding(parsed.draft), draft.currency)}

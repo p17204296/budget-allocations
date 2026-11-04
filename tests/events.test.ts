@@ -7,7 +7,6 @@ import {
   reconcileSavings,
   savingMonths,
   expectedFunding,
-  plannedFunding,
   savingsRebalanceSuggestion,
   contributionCount,
   convertFunding,
@@ -652,7 +651,7 @@ describe("live October–January regression", () => {
     vi.useFakeTimers();
     try {
       vi.setSystemTime(new Date("2026-11-04T12:00:00Z"));
-      expect(plannedFunding(octoberJanuaryEvent())).toBe(3675);
+      expect(expectedFunding(octoberJanuaryEvent())).toBe(3675);
     } finally {
       vi.useRealTimers();
     }
@@ -667,7 +666,7 @@ describe("live October–January regression", () => {
         735, 735, 735, 735,
       ]);
       expect(calculateEvent({ ...value, savingsPlan }).funded).toBe(0);
-      expect(plannedFunding({ ...value, savingsPlan })).toBe(2940);
+      expect(expectedFunding({ ...value, savingsPlan })).toBe(2940);
     } finally {
       vi.useRealTimers();
     }
@@ -715,15 +714,6 @@ describe("savings reconciliation across combinations", () => {
               expect(balanced.months[0]).toEqual(savingsPlan.months[0]);
               if (actual > 0)
                 expect(balanced.months[1]).toEqual(savingsPlan.months[1]);
-              expect(minor(plannedFunding(after), currency)).toBe(
-                starting +
-                  balanced.months
-                    .slice(1)
-                    .reduce(
-                      (sum, row) => sum + minor(row.planned, currency),
-                      0,
-                    ),
-              );
               expect(rebalanceSavings(after)).toEqual(balanced);
               expect(savingsRebalanceSuggestion(after)).toBeNull();
             }
@@ -740,12 +730,11 @@ describe("savings reconciliation across combinations", () => {
     ]);
     expect(expectedFunding({ ...value, savingsPlan })).toBe(2940);
   });
-  it("keeps planned totals separate from actual-versus-plan expectations", () => {
+  it("uses actual savings in the forecast while preserving monthly targets", () => {
     const value = octoberJanuaryEvent();
     const savingsPlan = rebalanceSavings(value);
     savingsPlan.months[0].actual = 500;
     const changed = { ...value, savingsPlan };
-    expect(plannedFunding(changed)).toBe(2940);
     expect(expectedFunding(changed)).toBe(2705);
     expect(calculateEvent(changed).funded).toBe(500);
     expect(savingsRebalanceSuggestion(changed)?.amount).toBe(235);
@@ -764,7 +753,6 @@ describe("savings reconciliation across combinations", () => {
         "2027-02-01",
       ]) {
         vi.setSystemTime(new Date(`${date}T12:00:00Z`));
-        expect(plannedFunding(value)).toBe(3675);
         expect(expectedFunding(value)).toBe(3675);
         expect(savingsRebalanceSuggestion(value)).toMatchObject({
           kind: "surplus",

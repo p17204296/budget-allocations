@@ -600,7 +600,7 @@ it("repairs the live four-month plan explicitly and saves £735 per month", asyn
     notes: reproduction.notes,
   };
   await open();
-  expect(screen.getByText("Planned funding: £3,675.00")).toBeTruthy();
+  expect(screen.queryByText(/^Planned funding:/)).toBeNull();
   expect(screen.getByText("Expected funding: £3,675.00")).toBeTruthy();
   expect(screen.getByText("£735.00 above the target.")).toBeTruthy();
   expect(mock.save).not.toHaveBeenCalled();
@@ -620,7 +620,7 @@ it("repairs the live four-month plan explicitly and saves £735 per month", asyn
       screen.getByLabelText(`Actually saved — ${month}`).getAttribute("value"),
     ).toBe("0");
   }
-  expect(screen.getByText("Planned funding: £2,940.00")).toBeTruthy();
+  expect(screen.queryByText(/^Planned funding:/)).toBeNull();
   expect(screen.getByText("Expected funding: £2,940.00")).toBeTruthy();
   expect(screen.getByText("Your plan covers the target exactly.")).toBeTruthy();
   await act(async () => {
@@ -685,4 +685,46 @@ it("distinguishes reducible plans from the total surplus when already overfunded
   expect(
     screen.queryByText("You could reduce your planned savings"),
   ).toBeNull();
+});
+
+it("shows only expected funding with actual savings and retains the target status", async () => {
+  if (!mock.state.detail) throw new Error("Missing fixture");
+  const reproduction = octoberJanuaryEvent();
+  mock.state.detail.draft = {
+    ...mock.state.detail.draft,
+    ...reproduction,
+    name: "Anniversary",
+    savingsPlan: {
+      startDate: "2026-10-15",
+      startingFunding: 0,
+      months: [
+        { month: "2026-10", planned: 735, actual: 618 },
+        { month: "2026-11", planned: 774, actual: 0 },
+        { month: "2026-12", planned: 774, actual: 0 },
+        { month: "2027-01", planned: 774, actual: 0 },
+      ],
+    },
+  };
+  await open();
+  expect(screen.queryByText(/^Planned funding:/)).toBeNull();
+  expect(
+    screen.queryByText(/Starting funding plus every planned amount/),
+  ).toBeNull();
+  expect(screen.getByText("Expected funding: £2,940.00")).toBeTruthy();
+  expect(screen.getByText("Your plan covers the target exactly.")).toBeTruthy();
+  expect(
+    screen
+      .getByLabelText("Planned savings — October 2026")
+      .getAttribute("value"),
+  ).toBe("735");
+  expect(
+    screen
+      .getByLabelText("Actually saved — October 2026")
+      .getAttribute("value"),
+  ).toBe("618");
+  fireEvent.change(screen.getByLabelText("Planned savings — November 2026"), {
+    target: { value: "500" },
+  });
+  expect(screen.getByText("Expected funding: £2,666.00")).toBeTruthy();
+  expect(screen.getByText("£274.00 more needs to be planned.")).toBeTruthy();
 });

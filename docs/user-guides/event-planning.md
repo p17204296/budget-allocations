@@ -42,11 +42,9 @@ When expected funding differs from the target, the rebalance button is highlight
 
 Changing dates preserves overlapping entries and adds new months with zero amounts. Months excluded by the new dates appear under **Outside current schedule**. Their actual savings still count toward funding; their planned amounts are excluded from the active totals. Use the remove button to delete an outside month and both of its amounts; this cannot be undone. If the schedule later includes that month again, it is added with zero amounts. Rebalance when you want suggestions for the revised dates.
 
-**Planned funding** is starting funding plus the sum of every planned amount in the selected schedule. It matches the monthly planned entries even when actual savings differ.
-
 **Expected funding** is starting funding plus recorded actual savings, plus planned amounts for selected months with zero actual savings. A nonzero actual amount replaces that month's plan in this total. Actual savings outside the schedule still count. Zero actual savings means the plan is still included, regardless of the calendar date. This is an expectation, not money already funded.
 
-For example, £735 planned in each of four months totals £2,940. Recording £500 actual savings in October leaves the planned total at £2,940 but changes expected funding to £2,705: £500 actual plus three £735 plans. Rebalance retains October's original £735 target and divides the remaining £2,440 across the other three months (£813.34, £813.33, £813.33).
+For example, £735 planned in each of four months totals £2,940. Recording £500 actual savings in October changes expected funding to £2,705: £500 actual plus three £735 plans. Rebalance retains October's original £735 target and divides the remaining £2,440 across the other three months (£813.34, £813.33, £813.33).
 
 Existing monthly plans require no data migration. They open with their saved amounts intact, show the correct totals, and can be corrected with **Rebalance savings plan**. Legacy events without monthly savings still convert their aggregate funding as described above.
 
